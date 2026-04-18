@@ -1,0 +1,206 @@
+/* ===== Reset & base ===== */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1a1d24;
+  background: #f6f7f9;
+  min-height: 100vh;
+}
+
+code { font-family: "SF Mono", Menlo, monospace; font-size: 0.9em; background: #eef0f4; padding: 1px 5px; border-radius: 3px; }
+
+h2 { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+h3 { font-size: 14px; font-weight: 600; margin: 28px 0 10px; color: #3a3f4b; text-transform: uppercase; letter-spacing: 0.04em; }
+.muted { color: #7a808c; font-size: 13px; }
+
+/* ===== Top bar ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 32px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.brand-mark { color: #2563eb; font-size: 10px; }
+.opp-picker { display: flex; align-items: center; gap: 8px; }
+.opp-picker label { color: #7a808c; font-size: 13px; }
+.opp-picker select {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  min-width: 220px;
+}
+
+/* ===== Tabs ===== */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 32px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+.tab-btn {
+  padding: 12px 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: #1a1d24; }
+.tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+/* ===== Summary tab ===== */
+.summary-head { margin-bottom: 28px; }
+
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.scenario-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.scen-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.scen-name { font-weight: 600; font-size: 15px; }
+.scen-sub { font-size: 12px; color: #7a808c; margin-top: 2px; }
+
+.scen-worst .scen-head { background: #fef2f2; }
+.scen-worst .scen-name { color: #991b1b; }
+.scen-base .scen-head { background: #eff6ff; }
+.scen-base .scen-name { color: #1e40af; }
+.scen-best .scen-head { background: #f0fdf4; }
+.scen-best .scen-name { color: #166534; }
+
+.scen-body { padding: 8px 0; }
+
+.kpi {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 18px;
+}
+.kpi-label { color: #4b5563; font-size: 13px; }
+.kpi-value { font-weight: 500; font-variant-numeric: tabular-nums; }
+.kpi-hl { background: #fafbfc; }
+.kpi-hl .kpi-value { font-weight: 600; font-size: 15px; }
+
+/* ===== Hypothesis tab ===== */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+.two-col .col h3:first-child { margin-top: 0; }
+
+/* ===== Tables (kv + pnl) ===== */
+table.kv, table.pnl {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+table.kv thead, table.pnl thead { background: #fafbfc; }
+table.kv th, table.pnl th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e5e7eb;
+}
+table.kv td, table.pnl td {
+  padding: 8px 14px;
+  border-bottom: 1px solid #f1f3f5;
+}
+table.kv tr:last-child td, table.pnl tr:last-child td { border-bottom: none; }
+
+td.num, th.num { text-align: right; }
+
+tr.derived td { color: #6b7280; font-style: italic; }
+tr.sub td:first-child { padding-left: 28px; color: #4b5563; }
+
+/* P&L specific */
+tr.section td {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7a808c;
+  background: #fafbfc;
+  padding: 12px 14px 6px;
+  border-top: 1px solid #e5e7eb;
+}
+tr.pnl-line td {
+  font-weight: 600;
+  background: #f9fafb;
+}
+tr.total td { font-weight: 600; border-top: 1px solid #d1d5db; }
+tr.hl td { background: #eff6ff; font-weight: 600; }
+tr.hl .num { color: #1e40af; }
+
+.pct {
+  display: inline-block;
+  min-width: 55px;
+  color: #7a808c;
+  font-size: 12px;
+  margin-left: 10px;
+}
+
+/* ===== P&L head ===== */
+.pnl-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.scenario-picker { display: flex; align-items: center; gap: 8px; }
+.scenario-picker label { color: #7a808c; font-size: 13px; }
+.scenario-picker select {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+}
+
+/* ===== Misc colors for scenario labels in hypothesis tab ===== */
+td.scen-worst { color: #991b1b; font-weight: 500; }
+td.scen-base  { color: #1e40af; font-weight: 500; }
+td.scen-best  { color: #166534; font-weight: 500; }
+
+.gross-profit { margin-top: 32px; }
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  main { padding: 20px; }
+  .topbar, .tabs { padding-left: 20px; padding-right: 20px; }
+  .scenario-grid { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+  .pnl-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+}

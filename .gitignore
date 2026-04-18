@@ -1,0 +1,9 @@
+# Internal / source files — not needed for the site
+villa_el_cantal_source.xlsx
+model_dump.txt
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
