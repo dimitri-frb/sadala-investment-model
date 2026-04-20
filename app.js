@@ -534,8 +534,85 @@ function renderPnL(opp) {
 
       </tbody>
     </table>
+
+    ${renderProfitDistribution(opp, r)}
   `;
   return html;
+}
+
+// ===== Profit distribution block (shared between P&L bottom and elsewhere) =====
+// Palette — one color per investor position. Cycles if > 5 investors.
+const DIST_COLORS = ["#2563eb", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];
+
+function computeDistribution(opp, r) {
+  const eq = r.returns.equityInvested;
+  const namedEquity = opp.investors.reduce((s, i) => s + (i.equity || 0), 0);
+  return opp.investors.map((inv, idx) => {
+    const profit = inv.profitShare * r.returns.netProfit;
+    const equityIn = inv.equity == null ? eq - namedEquity : inv.equity;
+    const multiple = equityIn > 0 ? (equityIn + profit) / equityIn : null;
+    return { ...inv, idx, equityIn, profit, multiple, color: DIST_COLORS[idx % DIST_COLORS.length] };
+  });
+}
+
+function renderProfitDistribution(opp, r) {
+  const rows = computeDistribution(opp, r);
+  const totalProfit = r.returns.netProfit;
+
+  // Stacked bar segments (use profitShare so tiny positions still show)
+  const segments = rows.map(inv => `
+    <div class="dist-seg"
+         style="width:${(inv.profitShare * 100)}%; background:${inv.color}"
+         title="${inv.name}: ${fmtPct(inv.profitShare, 1)} · ${fmtEUR(inv.profit)}"></div>
+  `).join("");
+
+  // Per-investor rows with their own mini bar
+  const investorRows = rows.map(inv => `
+    <tr>
+      <td><span class="dist-dot" style="background:${inv.color}"></span> ${inv.name}</td>
+      <td class="num">${fmtPct(inv.profitShare, 1)}</td>
+      <td class="num">${fmtEUR(inv.profit)}</td>
+      <td class="num">${inv.multiple == null ? "—" : inv.multiple.toFixed(2) + "×"}</td>
+      <td class="dist-bar-cell">
+        <div class="dist-mini-bar">
+          <div class="dist-mini-fill" style="width:${inv.profitShare * 100}%; background:${inv.color}"></div>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+
+  return `
+    <div class="distribution-section">
+      <h3>Profit distribution</h3>
+      <p class="muted">How the EAT of <strong>${fmtEUR(totalProfit)}</strong> is split among shareholders.</p>
+
+      <div class="dist-bar-wrap">
+        <div class="dist-bar">${segments}</div>
+        <div class="dist-legend">
+          ${rows.map(inv => `
+            <div class="dist-legend-item">
+              <span class="dist-dot" style="background:${inv.color}"></span>
+              <span class="dist-legend-name">${inv.name}</span>
+              <span class="dist-legend-pct">${fmtPct(inv.profitShare, 1)}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+
+      <table class="kv dist-table">
+        <thead>
+          <tr>
+            <th>Investor</th>
+            <th class="num">Share</th>
+            <th class="num">Net profit</th>
+            <th class="num">Multiple</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${investorRows}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 // ===== Tab: Investors =====

@@ -338,6 +338,78 @@ td.scen-worst { color: #991b1b; font-weight: 500; }
 td.scen-base  { color: #1e40af; font-weight: 500; }
 td.scen-best  { color: #166534; font-weight: 500; }
 
+/* ===== Profit distribution ===== */
+.distribution-section {
+  margin-top: 36px;
+  padding: 24px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+.distribution-section h3 { margin-top: 0; }
+
+.dist-bar-wrap {
+  margin: 16px 0 24px;
+}
+
+.dist-bar {
+  display: flex;
+  height: 28px;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f1f3f5;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+.dist-seg {
+  transition: filter 0.15s;
+  min-width: 2px;  /* ensure tiny shares still show */
+}
+.dist-seg:hover { filter: brightness(1.1); cursor: help; }
+
+.dist-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 14px;
+  font-size: 13px;
+}
+.dist-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dist-legend-name { color: #1a1d24; }
+.dist-legend-pct { color: #7a808c; font-variant-numeric: tabular-nums; }
+
+.dist-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dist-table {
+  margin-top: 8px;
+}
+.dist-table td { vertical-align: middle; }
+.dist-bar-cell {
+  width: 30%;
+  min-width: 120px;
+}
+.dist-mini-bar {
+  height: 6px;
+  background: #eef0f4;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.dist-mini-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s;
+}
+
 /* ===== Timeline ===== */
 /*
   Layout math:
