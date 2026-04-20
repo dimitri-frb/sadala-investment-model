@@ -336,7 +336,7 @@ function renderHypothesis(opp) {
         <h3>Timing</h3>
         <table class="kv">
           <tbody>
-            ${hypRow("Project duration", `${opp.projectDurationMonths} months`)}
+            ${hypRow("Project duration (est.)", `${opp.projectDurationMonths} months`)}
           </tbody>
         </table>
       </div>
