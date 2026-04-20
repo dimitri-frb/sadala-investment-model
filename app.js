@@ -110,10 +110,7 @@ const state = {
   scenario: "base",
   tab: "summary",
   expanded: { land: false, hard: false, soft: false },
-  pctStyle: "bars",  // "bars" | "fill" | "dots" | "text"
 };
-
-const PCT_STYLES = ["bars", "fill", "dots", "text"];
 
 // ===== URL hash sync (so refresh + share keep the view) =====
 // Hash format: #opp=<key>&tab=<tab>&scenario=<scenario>
@@ -124,7 +121,6 @@ function readHash() {
     opp: params.get("opp"),
     tab: params.get("tab"),
     scenario: params.get("scenario"),
-    pct: params.get("pct"),
   };
 }
 
@@ -133,7 +129,6 @@ function writeHash() {
   if (state.oppKey)   params.set("opp", state.oppKey);
   if (state.tab)      params.set("tab", state.tab);
   if (state.scenario) params.set("scenario", state.scenario);
-  if (state.pctStyle && state.pctStyle !== "bars") params.set("pct", state.pctStyle);
   const newHash = "#" + params.toString();
   // Use replaceState so we don't clutter browser history on every click.
   if (location.hash !== newHash) {
@@ -216,41 +211,20 @@ function renderTimeline(opp) {
 
   return `
     <div class="timeline-section">
-      <h3>Timeline</h3>
+      <div class="timeline-head">
+        <h3>Timeline</h3>
+        ${statusBadgeHTML(opp)}
+      </div>
       <div class="timeline">${inner}</div>
     </div>`;
 }
 
-// ===== Per-row % visualization (style controlled by state.pctStyle) =====
-// Styles: "bars" (default), "fill", "dots", "text"
+// ===== Per-row % visualization (cell background fill) =====
 function pctCell(value, total) {
   const pct = total ? value / total : 0;
   const clamped = Math.min(Math.max(pct, 0), 1);
-  const label = `<span class="pct-num">${fmtPct(pct)}</span>`;
-
-  switch (state.pctStyle) {
-    case "fill": {
-      const w = (clamped * 100).toFixed(1);
-      return `<div class="pct-cell pctv-fill" style="background: linear-gradient(to right, var(--pct-color, #dbeafe) ${w}%, transparent ${w}%)">${label}</div>`;
-    }
-    case "dots": {
-      const filled = Math.round(clamped * 10);
-      let dots = "";
-      for (let i = 0; i < 10; i++) dots += `<span class="pct-dot ${i < filled ? "on" : "off"}"></span>`;
-      return `<div class="pct-cell pctv-dots"><div class="pct-dots-row">${dots}</div>${label}</div>`;
-    }
-    case "text":
-      return `<div class="pct-cell pctv-text">${label}</div>`;
-    case "bars":
-    default: {
-      const w = (clamped * 100).toFixed(1);
-      return `
-        <div class="pct-cell pctv-bars">
-          <div class="pct-bar"><div class="pct-fill" style="width:${w}%"></div></div>
-          ${label}
-        </div>`;
-    }
-  }
+  const w = (clamped * 100).toFixed(1);
+  return `<div class="pct-cell pctv-fill" style="background: linear-gradient(to right, var(--pct-color, #dbeafe) ${w}%, transparent ${w}%)"><span class="pct-num">${fmtPct(pct)}</span></div>`;
 }
 
 // ===== Tab: Summary =====
@@ -272,7 +246,7 @@ function renderSummary(opp) {
   let html = `
     <div class="summary-head">
       <div>
-        <h2>${opp.name} ${statusBadgeHTML(opp)}</h2>
+        <h2>${opp.name}</h2>
         <div class="muted">${opp.address || "Address TBD"}</div>
       </div>
     </div>
@@ -322,7 +296,7 @@ function renderHypothesis(opp) {
   const S = opp.softCosts;
 
   let html = `
-    <h2>Hypothesis — ${opp.name} ${statusBadgeHTML(opp)}</h2>
+    <h2>Hypothesis — ${opp.name}</h2>
     <p class="muted">Inputs are edited in <code>data/${state.oppKey}.js</code> via Claude Code. This view is read-only.</p>
 
     <div class="two-col">
@@ -466,18 +440,8 @@ function renderPnL(opp) {
       </tr>`).join("");
   }
 
-  const pctStyleLabel = { bars: "Bars", fill: "Fill", dots: "Dots", text: "Text" };
   const html = `
-    <h2>P&L — ${opp.name} ${statusBadgeHTML(opp)} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
-
-    <div class="pnl-toolbar">
-      <div class="pct-style-toggle">
-        <span class="pct-style-label">% visual:</span>
-        ${PCT_STYLES.map(k => `
-          <button class="pct-style-btn ${state.pctStyle === k ? "active" : ""}" data-pct-style="${k}">${pctStyleLabel[k]}</button>
-        `).join("")}
-      </div>
-    </div>
+    <h2>P&L — ${opp.name} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
 
     <table class="pnl">
       <thead>
@@ -663,7 +627,7 @@ function renderInvestors(opp) {
   }));
 
   return `
-    <h2>Investors — ${opp.name} ${statusBadgeHTML(opp)} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
+    <h2>Investors — ${opp.name} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
 
     <h3>ROE analysis</h3>
     <table class="kv">
@@ -755,13 +719,6 @@ function renderTab() {
     });
   });
 
-  // Wire up % visualization style toggle (only present on P&L tab)
-  document.querySelectorAll(".pct-style-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      state.pctStyle = btn.dataset.pctStyle;
-      renderTab();
-    });
-  });
 }
 
 // ===== Bootstrap =====
@@ -775,7 +732,6 @@ function init() {
   state.oppKey   = (hashed.opp && window.OPPORTUNITIES[hashed.opp]) ? hashed.opp : oppKeys[0];
   state.tab      = ["summary", "hypothesis", "pnl", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
   state.scenario = ["worst", "base", "best"].includes(hashed.scenario) ? hashed.scenario : "base";
-  state.pctStyle = PCT_STYLES.includes(hashed.pct) ? hashed.pct : "bars";
 
   // Opportunity dropdown
   const select = document.getElementById("opportunity-select");

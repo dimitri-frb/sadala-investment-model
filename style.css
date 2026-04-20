@@ -235,30 +235,7 @@ tr.line-primary.pos .pct-num { color: #059669; }
 tr.line-primary.eat-line .pct-num { color: #14532d; font-size: 14px; }
 tr.line-deduction .pct-num { color: #b91c1c; }
 
-/* --- Style: bars (default) --- */
-.pctv-bars .pct-bar {
-  flex: 1;
-  height: 6px;
-  background: #eef0f4;
-  border-radius: 999px;
-  overflow: hidden;
-  min-width: 70px;
-  max-width: 140px;
-}
-.pctv-bars .pct-fill {
-  height: 100%;
-  background: #9ca3af;
-  border-radius: 999px;
-  transition: width 0.2s;
-}
-tr.line-primary .pctv-bars .pct-fill { background: #1a1d24; }
-tr.line-primary.pos .pctv-bars .pct-fill { background: #10b981; }
-tr.line-primary.eat-line .pctv-bars .pct-fill { background: #10b981; }
-tr.line-deduction .pctv-bars .pct-fill { background: #f87171; }
-tr.cost-row .pctv-bars .pct-fill { background: #f87171; }
-tr.cost-detail .pctv-bars .pct-fill { background: #fca5a5; }
-
-/* --- Style: fill (cell background gradient) --- */
+/* --- Cell background gradient (% of revenue) --- */
 .pctv-fill {
   padding: 4px 10px;
   border-radius: 4px;
@@ -270,69 +247,6 @@ tr.line-primary.eat-line .pctv-fill { --pct-color: #86efac; }
 tr.line-deduction .pctv-fill { --pct-color: #fecaca; }
 tr.cost-row .pctv-fill { --pct-color: #fecaca; }
 tr.cost-detail .pctv-fill { --pct-color: #fee2e2; }
-
-/* --- Style: dots --- */
-.pctv-dots .pct-dots-row {
-  display: flex;
-  gap: 2px;
-  flex: 1;
-}
-.pct-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #e5e7eb;
-  display: inline-block;
-}
-.pct-dot.on { background: #9ca3af; }
-tr.line-primary .pct-dot.on { background: #1a1d24; }
-tr.line-primary.pos .pct-dot.on { background: #10b981; }
-tr.line-primary.eat-line .pct-dot.on { background: #10b981; }
-tr.line-deduction .pct-dot.on { background: #f87171; }
-tr.cost-row .pct-dot.on { background: #f87171; }
-tr.cost-detail .pct-dot.on { background: #fca5a5; }
-
-/* --- Style: text --- */
-.pctv-text { justify-content: flex-end; }
-.pctv-text .pct-num { margin-left: 0; }
-
-/* ===== P&L toolbar (style toggle above table) ===== */
-.pnl-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
-}
-.pct-style-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px;
-  background: #f1f3f5;
-  border-radius: 8px;
-}
-.pct-style-label {
-  font-size: 12px;
-  color: #6b7280;
-  padding: 0 6px 0 8px;
-}
-.pct-style-btn {
-  font: inherit;
-  font-size: 12px;
-  padding: 5px 12px;
-  background: transparent;
-  color: #4b5563;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.pct-style-btn:hover { color: #1a1d24; background: rgba(255,255,255,0.5); }
-.pct-style-btn.active {
-  background: white;
-  color: #2563eb;
-  font-weight: 500;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-}
 
 /* Section header */
 tr.section-header td {
@@ -510,6 +424,14 @@ td.scen-best  { color: #166534; font-weight: 500; }
 */
 .timeline-section { margin: 8px 0 16px; }
 .timeline-section h3 { margin-top: 0; }
+.timeline-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.timeline-head h3 { margin: 0; }
+.timeline-head .status-badge { margin-left: 0; }
 
 .timeline {
   display: flex;
