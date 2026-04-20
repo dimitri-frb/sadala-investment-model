@@ -110,7 +110,10 @@ const state = {
   scenario: "base",
   tab: "summary",
   expanded: { land: false, hard: false, soft: false },
+  pctStyle: "bars",  // "bars" | "fill" | "dots" | "text"
 };
+
+const PCT_STYLES = ["bars", "fill", "dots", "text"];
 
 // ===== URL hash sync (so refresh + share keep the view) =====
 // Hash format: #opp=<key>&tab=<tab>&scenario=<scenario>
@@ -121,6 +124,7 @@ function readHash() {
     opp: params.get("opp"),
     tab: params.get("tab"),
     scenario: params.get("scenario"),
+    pct: params.get("pct"),
   };
 }
 
@@ -129,6 +133,7 @@ function writeHash() {
   if (state.oppKey)   params.set("opp", state.oppKey);
   if (state.tab)      params.set("tab", state.tab);
   if (state.scenario) params.set("scenario", state.scenario);
+  if (state.pctStyle && state.pctStyle !== "bars") params.set("pct", state.pctStyle);
   const newHash = "#" + params.toString();
   // Use replaceState so we don't clutter browser history on every click.
   if (location.hash !== newHash) {
@@ -216,10 +221,36 @@ function renderTimeline(opp) {
     </div>`;
 }
 
-// ===== Plain-text % cell (for P&L table) =====
-function pctText(value, total) {
+// ===== Per-row % visualization (style controlled by state.pctStyle) =====
+// Styles: "bars" (default), "fill", "dots", "text"
+function pctCell(value, total) {
   const pct = total ? value / total : 0;
-  return `<span class="pct-num">${fmtPct(pct)}</span>`;
+  const clamped = Math.min(Math.max(pct, 0), 1);
+  const label = `<span class="pct-num">${fmtPct(pct)}</span>`;
+
+  switch (state.pctStyle) {
+    case "fill": {
+      const w = (clamped * 100).toFixed(1);
+      return `<div class="pct-cell pctv-fill" style="background: linear-gradient(to right, var(--pct-color, #dbeafe) ${w}%, transparent ${w}%)">${label}</div>`;
+    }
+    case "dots": {
+      const filled = Math.round(clamped * 10);
+      let dots = "";
+      for (let i = 0; i < 10; i++) dots += `<span class="pct-dot ${i < filled ? "on" : "off"}"></span>`;
+      return `<div class="pct-cell pctv-dots"><div class="pct-dots-row">${dots}</div>${label}</div>`;
+    }
+    case "text":
+      return `<div class="pct-cell pctv-text">${label}</div>`;
+    case "bars":
+    default: {
+      const w = (clamped * 100).toFixed(1);
+      return `
+        <div class="pct-cell pctv-bars">
+          <div class="pct-bar"><div class="pct-fill" style="width:${w}%"></div></div>
+          ${label}
+        </div>`;
+    }
+  }
 }
 
 // ===== Revenue allocation: single panoramic bar showing where each € goes =====
@@ -467,7 +498,7 @@ function renderPnL(opp) {
       <tr class="cost-row expandable" data-toggle="${key}">
         <td><span class="triangle">${triangle}</span> ${label}</td>
         <td class="num">${fmtEUR(value)}</td>
-        <td class="num pct-text-cell">${pctText(value, rev)}</td>
+        <td class="num pct-text-cell">${pctCell(value, rev)}</td>
       </tr>`;
   }
 
@@ -477,14 +508,24 @@ function renderPnL(opp) {
       <tr class="cost-detail">
         <td>${d.label}</td>
         <td class="num">${fmtEUR(d.value)}</td>
-        <td class="num pct-text-cell">${pctText(d.value, rev)}</td>
+        <td class="num pct-text-cell">${pctCell(d.value, rev)}</td>
       </tr>`).join("");
   }
 
+  const pctStyleLabel = { bars: "Bars", fill: "Fill", dots: "Dots", text: "Text" };
   const html = `
     <h2>P&L — ${opp.name} ${statusBadgeHTML(opp)} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
 
     ${renderRevenueAllocation(opp, r)}
+
+    <div class="pnl-toolbar">
+      <div class="pct-style-toggle">
+        <span class="pct-style-label">% visual:</span>
+        ${PCT_STYLES.map(k => `
+          <button class="pct-style-btn ${state.pctStyle === k ? "active" : ""}" data-pct-style="${k}">${pctStyleLabel[k]}</button>
+        `).join("")}
+      </div>
+    </div>
 
     <table class="pnl">
       <thead>
@@ -496,7 +537,7 @@ function renderPnL(opp) {
         <tr class="line-primary">
           <td>Gross sale</td>
           <td class="num">${fmtEUR(r.pnl.revenue)}</td>
-          <td class="num pct-text-cell">${pctText(r.pnl.revenue, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.revenue, rev)}</td>
         </tr>
 
         <tr class="section-spacer"><td colspan="3"></td></tr>
@@ -507,21 +548,21 @@ function renderPnL(opp) {
         <tr class="cost-row">
           <td><span class="triangle-spacer"></span> Setup costs (${fmtPct(opp.setupRate, 0)} of acquisition)</td>
           <td class="num">${fmtEUR(r.setupCost)}</td>
-          <td class="num pct-text-cell">${pctText(r.setupCost, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.setupCost, rev)}</td>
         </tr>
         ${expandableRow("hard", "Hard costs (construction)", r.hard.construction)}
         ${detailRows("hard", hardDetails)}
         <tr class="cost-row">
           <td><span class="triangle-spacer"></span> Contingencies (${fmtPct(opp.hardCosts.contingenciesRate, 0)} of construction)</td>
           <td class="num">${fmtEUR(r.hard.contingencies)}</td>
-          <td class="num pct-text-cell">${pctText(r.hard.contingencies, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.hard.contingencies, rev)}</td>
         </tr>
         ${expandableRow("soft", "Soft costs (architecture, PM, etc.)", r.soft.total)}
         ${detailRows("soft", softDetails)}
         <tr class="line-primary subtle">
           <td>Total costs</td>
           <td class="num">${fmtEUR(r.pnl.totalCosts)}</td>
-          <td class="num pct-text-cell">${pctText(r.pnl.totalCosts, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.totalCosts, rev)}</td>
         </tr>
 
         <tr class="section-spacer"><td colspan="3"></td></tr>
@@ -530,12 +571,12 @@ function renderPnL(opp) {
         <tr class="line-primary pos">
           <td>EBITDA (Revenue − Costs)</td>
           <td class="num">${fmtEUR(r.pnl.ebitda)}</td>
-          <td class="num pct-text-cell">${pctText(r.pnl.ebitda, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.ebitda, rev)}</td>
         </tr>
         <tr class="line-deduction">
           <td><span class="triangle-spacer"></span> Commercialization costs (${fmtPct(opp.commercializationRate, 0)} of revenue)</td>
           <td class="num">−${fmtEUR(r.pnl.commercialization)}</td>
-          <td class="num pct-text-cell">${pctText(r.pnl.commercialization, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.commercialization, rev)}</td>
         </tr>
 
         <tr class="section-spacer"><td colspan="3"></td></tr>
@@ -544,12 +585,12 @@ function renderPnL(opp) {
         <tr class="line-primary pos">
           <td>EBIT</td>
           <td class="num">${fmtEUR(r.pnl.ebit)}</td>
-          <td class="num pct-text-cell">${pctText(r.pnl.ebit, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.ebit, rev)}</td>
         </tr>
         <tr class="line-deduction">
           <td><span class="triangle-spacer"></span> Financing costs (${fmtPct(opp.financingRate, 0)} of costs)</td>
           <td class="num">−${fmtEUR(r.pnl.financing)}</td>
-          <td class="num pct-text-cell">${pctText(r.pnl.financing, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.financing, rev)}</td>
         </tr>
 
         <tr class="section-spacer"><td colspan="3"></td></tr>
@@ -558,12 +599,12 @@ function renderPnL(opp) {
         <tr class="line-primary pos">
           <td>EBT</td>
           <td class="num">${fmtEUR(r.pnl.ebt)}</td>
-          <td class="num pct-text-cell">${pctText(r.pnl.ebt, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.ebt, rev)}</td>
         </tr>
         <tr class="line-deduction">
           <td><span class="triangle-spacer"></span> Taxes (IS, ${fmtPct(opp.taxRate, 0)})</td>
           <td class="num">−${fmtEUR(r.pnl.tax)}</td>
-          <td class="num pct-text-cell">${pctText(r.pnl.tax, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.tax, rev)}</td>
         </tr>
 
         <tr class="section-spacer"><td colspan="3"></td></tr>
@@ -572,7 +613,7 @@ function renderPnL(opp) {
         <tr class="line-primary pos eat-line">
           <td>EAT (Net profit)</td>
           <td class="num">${fmtEUR(r.pnl.eat)}</td>
-          <td class="num pct-text-cell">${pctText(r.pnl.eat, rev)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.eat, rev)}</td>
         </tr>
 
       </tbody>
@@ -761,6 +802,14 @@ function renderTab() {
       renderTab();
     });
   });
+
+  // Wire up % visualization style toggle (only present on P&L tab)
+  document.querySelectorAll(".pct-style-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.pctStyle = btn.dataset.pctStyle;
+      renderTab();
+    });
+  });
 }
 
 // ===== Bootstrap =====
@@ -774,6 +823,7 @@ function init() {
   state.oppKey   = (hashed.opp && window.OPPORTUNITIES[hashed.opp]) ? hashed.opp : oppKeys[0];
   state.tab      = ["summary", "hypothesis", "pnl", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
   state.scenario = ["worst", "base", "best"].includes(hashed.scenario) ? hashed.scenario : "base";
+  state.pctStyle = PCT_STYLES.includes(hashed.pct) ? hashed.pct : "bars";
 
   // Opportunity dropdown
   const select = document.getElementById("opportunity-select");
