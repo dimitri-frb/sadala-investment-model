@@ -309,21 +309,6 @@ function renderHypothesis(opp) {
       </tbody>
     </table>
 
-    <h3>Cap table</h3>
-    <table class="kv">
-      <thead>
-        <tr><th>Investor</th><th class="num">Equity</th><th class="num">Profit share</th></tr>
-      </thead>
-      <tbody>
-        ${opp.investors.map(i => `
-          <tr>
-            <td>${i.name}</td>
-            <td class="num">${i.equity == null ? "<span class='muted'>derived</span>" : fmtEUR(i.equity)}</td>
-            <td class="num">${fmtPct(i.profitShare, 1)}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
   `;
   return html;
 }
