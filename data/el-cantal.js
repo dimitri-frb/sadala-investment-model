@@ -6,7 +6,7 @@ window.OPPORTUNITY_ORDER.push("el-cantal");
 window.OPPORTUNITIES["el-cantal"] = {
   name: "El Cantal",
   address: "Leoni Benabu 41, 29018 Malaga",
-  status: "Proyecto basico submitted",
+  status: "Basic project submitted",
 
   // ====== PROPERTY ======
   property: {

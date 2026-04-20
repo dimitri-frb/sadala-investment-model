@@ -6,6 +6,6 @@ window.OPPORTUNITY_ORDER.push("san-anton-50");
 window.OPPORTUNITIES["san-anton-50"] = {
   name: "San Antón 50",
   address: "",
-  status: "Proyecto basico approved",
+  status: "Basic project approved",
   placeholder: true,
 };
