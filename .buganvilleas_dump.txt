@@ -1,0 +1,1137 @@
+Workbook: /Users/dimitrifarber/Desktop/Projects_Claude/sadala-projects/.buganvilleas_source.xlsx
+Sheet names: ['Buganvillas', 'El Cantal', 'Summary', 'Hypothesis', 'Comparables', 'Architecture', 'Project management', 'Hypothesis_worst', 'Hypothesis_best']
+
+==========================================================================================
+SHEET: Buganvillas
+==========================================================================================
+Dimensions: A1:F34  max_row=34 max_col=6
+
+      A1 | VALUE: Property
+      B1 | VALUE: Bungavillas
+      A3 | VALUE: Asset description
+      A4 | VALUE: Asking price (€)
+      B4 | VALUE: 680000
+      A5 | VALUE: Offer price (€)
+      B5 | VALUE: 680000
+      A6 | VALUE: Total size (sqm)
+      B6 | VALUE: 1127
+      A7 | VALUE: Buildable area (sqm)
+      B7 | VALUE: 527
+      A8 | VALUE: €/bsqm
+      B8 | FORMULA: =B5/B7 | VALUE: 1290.322581
+     A10 | VALUE: Financing
+     A11 | VALUE: Hard cost loan disposal
+     B11 | VALUE: 1
+     A12 | VALUE: Loan interest
+     B12 | VALUE: 0.06
+     A13 | VALUE: Term
+     B13 | VALUE: According to construction timeline
+     A14 | VALUE: Waiver principal payment
+     B14 | VALUE: 60 mo
+     A15 | VALUE: Principal payment term
+     B15 | VALUE: 36 mo
+     A16 | VALUE: Exit date
+     B16 | VALUE: 36
+     A18 | VALUE: Costs
+     B18 | VALUE: /sqm
+     C18 | VALUE: total
+     A19 | VALUE: Asset acquisition
+     B19 | FORMULA: =B8 | VALUE: 1290.322581
+     C19 | FORMULA: =B19*$B$7 | VALUE: 680000
+     A20 | VALUE: Startup costs
+     B20 | VALUE: 400
+     C20 | FORMULA: =B20*$B$7 | VALUE: 210800
+     A21 | VALUE: External urbanization
+     B21 | VALUE: 0
+     C21 | FORMULA: =B21*$B$7 | VALUE: 0
+     A22 | VALUE: Hard costs
+     B22 | VALUE: 2500
+     C22 | FORMULA: =B22*$B$7 | VALUE: 1317500
+     A23 | VALUE: Soft costs
+     B23 | FORMULA: =C23/B7 | VALUE: 450
+     C23 | FORMULA: =sum(C24:C26) | VALUE: 237150
+     A24 | VALUE: Arquitecture costs
+     C24 | FORMULA: =$C$22*D24 | VALUE: 131750
+     D24 | VALUE: 0.1
+     E24 | VALUE: % of hard costs
+     A25 | VALUE: Licence costs & others
+     C25 | FORMULA: =$C$22*D25 | VALUE: 39525
+     D25 | VALUE: 0.03
+     E25 | VALUE: % of hard costs
+     A26 | VALUE: Project management
+     C26 | FORMULA: =$C$22*D26 | VALUE: 65875
+     D26 | VALUE: 0.05
+     E26 | VALUE: % of hard costs
+     F26 | VALUE: Capped
+     A27 | VALUE: TOTAL COSTS
+     B27 | FORMULA: =sum(B19:B23)*B7 | VALUE: 2445450
+     C27 | FORMULA: =sum(C19:C23) | VALUE: 2445450
+     A29 | VALUE: Financials
+     A30 | VALUE: Estimated sale price
+     B30 | VALUE: /sqm
+     C30 | VALUE: total
+     D30 | VALUE: Margin
+     E30 | VALUE: % on cost
+     A31 | VALUE: No licence
+     B31 | VALUE: 6000
+     C31 | FORMULA: =B31*$B$7 | VALUE: 3162000
+     D31 | FORMULA: =C31-$C$27 | VALUE: 716550
+     E31 | FORMULA: =D31/$C$27 | VALUE: 0.2930135558
+     A32 | VALUE: Licence obtained
+     B32 | VALUE: 6500
+     C32 | FORMULA: =B32*$B$7 | VALUE: 3425500
+     D32 | FORMULA: =C32-$C$27 | VALUE: 980050
+     E32 | FORMULA: =D32/$C$27 | VALUE: 0.4007646854
+     A33 | VALUE: Construction started
+     B33 | VALUE: 7000
+     C33 | FORMULA: =B33*$B$7 | VALUE: 3689000
+     D33 | FORMULA: =C33-$C$27 | VALUE: 1243550
+     E33 | FORMULA: =D33/$C$27 | VALUE: 0.5085158151
+     A34 | VALUE: Construction finalized
+     B34 | VALUE: 7500
+     C34 | FORMULA: =B34*$B$7 | VALUE: 3952500
+     D34 | FORMULA: =C34-$C$27 | VALUE: 1507050
+     E34 | FORMULA: =D34/$C$27 | VALUE: 0.6162669447
+
+==========================================================================================
+SHEET: Summary
+==========================================================================================
+Dimensions: A1:C30  max_row=30 max_col=3
+
+      A1 | VALUE: Project name
+      B1 | VALUE: Villa Buganvilleas
+      A2 | VALUE: Adress
+      B2 | VALUE: Buganvillas 14, 29018 Malaga
+      A3 | VALUE: Hypothesis
+      B3 | FORMULA: =Hypothesis!B3 | VALUE: Base case
+      A5 | VALUE: SIMPLIFIED P&L
+      B5 | VALUE: €
+      C5 | VALUE: € / sqm
+      A6 | VALUE: SELLING PRICE
+      B6 | FORMULA: =Hypothesis!B19 | VALUE: 3952500
+      C6 | FORMULA: =B6/Hypothesis!$B$10 | VALUE: 7500
+      A8 | VALUE: Property price
+      B8 | FORMULA: =Hypothesis!B23 | VALUE: 625000
+      C8 | FORMULA: =B8/Hypothesis!$B$10 | VALUE: 1185.958254
+      A9 | VALUE: Taxes & commissions
+      B9 | FORMULA: =sum(Hypothesis!B24:B26) | VALUE: 133450
+      C9 | FORMULA: =B9/Hypothesis!$B$10 | VALUE: 253.2258065
+     A10 | VALUE: Set up costs
+     B10 | FORMULA: =Hypothesis!B27 | VALUE: 22753.5
+     C10 | FORMULA: =B10/Hypothesis!$B$10 | VALUE: 43.17552182
+     A11 | VALUE: Soft costs - Architecture, permits, etc
+     B11 | FORMULA: =Hypothesis!B34 | VALUE: 306980.45
+     C11 | FORMULA: =B11/Hypothesis!$B$10 | VALUE: 582.5055977
+     A12 | VALUE: Hard costs - Construction
+     B12 | FORMULA: =Hypothesis!B29 | VALUE: 1753592.5
+     C12 | FORMULA: =B12/Hypothesis!$B$10 | VALUE: 3327.5
+     A13 | VALUE: Hard costs - Contingencies
+     B13 | FORMULA: =Hypothesis!B33 | VALUE: 87679.625
+     C13 | FORMULA: =B13/Hypothesis!$B$10 | VALUE: 166.375
+     A14 | VALUE: TOTAL COSTS
+     B14 | FORMULA: =SUM(B8:B13) | VALUE: 2929456.075
+     C14 | FORMULA: =SUM(C8:C13) | VALUE: 5558.74018
+     A16 | VALUE: SELLING COMMISSION
+     B16 | FORMULA: =Hypothesis!B55 | VALUE: 276675
+     C16 | FORMULA: =B16/Hypothesis!$B$10 | VALUE: 525
+     A18 | VALUE: FINANCING COSTS
+     B18 | FORMULA: =Hypothesis!B58 | VALUE: 146472.8038
+     C18 | FORMULA: =B18/Hypothesis!$B$10 | VALUE: 277.937009
+     A20 | VALUE: NET PROFIT BEFORE TAXES
+     B20 | FORMULA: =B6-B14-B16-B18 | VALUE: 599896.1213
+     C20 | FORMULA: =B20/Hypothesis!$B$10 | VALUE: 1138.322811
+     A22 | VALUE: Taxes & commissions
+     B22 | FORMULA: =B20*25% | VALUE: 149974.0303
+     C22 | FORMULA: =B22/Hypothesis!$B$10 | VALUE: 284.5807027
+     A23 | VALUE: ITP devolution
+     B23 | FORMULA: =Hypothesis!B62 | VALUE: 131250
+     C23 | FORMULA: =B23/Hypothesis!$B$10 | VALUE: 249.0512334
+     A24 | VALUE: NET PROFIT AFTER TAXES
+     B24 | FORMULA: =B20-B22+B23 | VALUE: 581172.0909
+     C24 | FORMULA: =B24/Hypothesis!$B$10 | VALUE: 1102.793341
+     A26 | VALUE: Equity invested
+     B26 | FORMULA: =Hypothesis!B66 | VALUE: 1175863.575
+     A27 | VALUE: ROE
+     B27 | FORMULA: =B24/B26 | VALUE: 0.4942512918
+     A29 | VALUE: Project duration
+     B29 | VALUE: 3
+     A30 | VALUE: IRR
+     B30 | FORMULA: =IF(B29=3,Hypothesis!B79,Hypothesis!C79) | VALUE: 0.2223957182
+
+==========================================================================================
+SHEET: Hypothesis
+==========================================================================================
+Dimensions: A1:G90  max_row=90 max_col=7
+
+      A1 | VALUE: Project name
+      B1 | FORMULA: =Summary!B1 | VALUE: Villa Buganvilleas
+      A2 | VALUE: Adress
+      B2 | FORMULA: =Summary!B2 | VALUE: Buganvillas 14, 29018 Malaga
+      A3 | VALUE: Hypothesis
+      B3 | VALUE: Base case
+      A5 | VALUE: ASSUMPTIONS
+      D5 | VALUE: SCENARII
+      E5 | VALUE: sale price / sqm
+      F5 | VALUE: PEM costs / sqm
+      A6 | VALUE: Tipologia edificacion
+      B6 | VALUE: Unifamiliar aislada UAS-4
+      D6 | VALUE: Worst case
+      E6 | VALUE: 6500
+      F6 | VALUE: 2750
+      A7 | VALUE: Superficie parcela adoptada
+      B7 | VALUE: 1127
+      C7 | VALUE: m2
+      D7 | VALUE: Base case
+      E7 | VALUE: 7500
+      F7 | VALUE: 2750
+      A8 | VALUE: Ratio edificabilidad
+      B8 | VALUE: 0.244
+      D8 | VALUE: Best case
+      E8 | VALUE: 8000
+      F8 | VALUE: 2750
+      A9 | VALUE: Superficie edificabilidad total
+      B9 | FORMULA: =B7*B8 | VALUE: 274.988
+      C9 | VALUE: m2
+     A10 | VALUE: Superficie construida total
+     B10 | FORMULA: =B11+B12 | VALUE: 527
+     C10 | VALUE: m2
+     A11 | VALUE: Construida sobre rasante
+     B11 | FORMULA: =527/2 | VALUE: 263.5
+     C11 | VALUE: m2
+     A12 | VALUE: Construida bajo rasante
+     B12 | FORMULA: =527/2 | VALUE: 263.5
+     C12 | VALUE: m2
+     A13 | VALUE: Exterior jardines y ZZCC urbanizacion
+     B13 | FORMULA: =B7-B11 | VALUE: 863.5
+     C13 | VALUE: m2
+     A15 | VALUE: SALES
+     B15 | VALUE: Revenue (excl. VAT)
+     C15 | VALUE: sale price / sqm
+     A16 | VALUE: I. Villa sale (without licence)
+     B16 | FORMULA: =C16*$B$10 | VALUE: 3162000
+     C16 | FORMULA: =C17-500 | VALUE: 6000
+     A17 | VALUE: II. Villa sale (with licence)
+     B17 | FORMULA: =C17*$B$10 | VALUE: 3425500
+     C17 | FORMULA: =C18-500 | VALUE: 6500
+     A18 | VALUE: III. Villa sale (construction started)
+     B18 | FORMULA: =C18*$B$10 | VALUE: 3689000
+     C18 | FORMULA: =C19-500 | VALUE: 7000
+     A19 | VALUE: IV. Villa sale (construction finalized)
+     B19 | FORMULA: =C19*$B$10 | VALUE: 3952500
+     C19 | FORMULA: =VLOOKUP(B3,D5:F8,2,FALSE) | VALUE: 7500
+     A21 | VALUE: COSTS
+     B21 | VALUE: Costs (excl. VAT)
+     C21 | VALUE: cost / sqm
+     D21 | VALUE: %
+     A22 | VALUE: Hard cost - land purchase
+     B22 | FORMULA: =sum(B23:B26) | VALUE: 758450
+     C22 | FORMULA: =B22/$B$10 | VALUE: 1439.184061
+     A23 | VALUE: Land asking price
+     B23 | VALUE: 625000
+     A24 | VALUE: ITP (taxes)
+     B24 | FORMULA: =B23*D24 | VALUE: 131250
+     D24 | VALUE: 0.21
+     E24 | VALUE: to be recuperated EOY
+     A25 | VALUE: Notary & registro
+     B25 | VALUE: 2200
+     A26 | VALUE: Sales commission
+     B26 | FORMULA: =B23*D26 | VALUE: 0
+     D26 | VALUE: 0
+     A27 | VALUE: Hard cost - setup costs
+     B27 | FORMULA: =B22*D27 | VALUE: 22753.5
+     D27 | VALUE: 0.03
+     A28 | VALUE: Hard cost - urbanization costs
+     B28 | VALUE: 0
+     C28 | VALUE: 0
+     D28 | VALUE: 0
+     A29 | VALUE: Hard cost - construction costs
+     B29 | FORMULA: =sum(B30:B32) | VALUE: 1753592.5
+     C29 | FORMULA: =B29/$B$10 | VALUE: 3327.5
+     A30 | VALUE: PEM costs
+     B30 | FORMULA: =C30*$B$10 | VALUE: 1449250
+     C30 | FORMULA: =VLOOKUP(B3,D5:F8,3,FALSE) | VALUE: 2750
+     A31 | VALUE: PEC costs
+     B31 | FORMULA: =C31*$B$10 | VALUE: 144925
+     C31 | FORMULA: =C30*D31 | VALUE: 275
+     D31 | VALUE: 0.1
+     A32 | VALUE: Other costs (insurance, taxes)
+     B32 | FORMULA: =D32*(B30+B31) | VALUE: 159417.5
+     C32 | FORMULA: =B32/$B$10 | VALUE: 302.5
+     D32 | VALUE: 0.1
+     A33 | VALUE: Hard cost - contingencies
+     B33 | FORMULA: =D33*B29 | VALUE: 87679.625
+     D33 | VALUE: 0.05
+     A34 | VALUE: Soft cost - All costs
+     B34 | FORMULA: =sum(B35:B40) | VALUE: 306980.45
+     C34 | FORMULA: =B34/B10 | VALUE: 582.5055977
+     D34 | VALUE: 0.1
+     A35 | VALUE: Arquitecture - project
+     B35 | FORMULA: =D35*$B$29 | VALUE: 35071.85
+     C35 | FORMULA: =$C$30*D35 | VALUE: 55
+     D35 | VALUE: 0.02
+     A36 | VALUE: Arquitecture - ejecucion
+     B36 | FORMULA: =D36*$B$29 | VALUE: 35071.85
+     C36 | FORMULA: =$C$30*D36 | VALUE: 55
+     D36 | VALUE: 0.02
+     A37 | VALUE: Aparejador
+     B37 | FORMULA: =D37*$B$29 | VALUE: 35071.85
+     C37 | FORMULA: =$C$30*D37 | VALUE: 55
+     D37 | VALUE: 0.02
+     A38 | VALUE: Paisajismo
+     B38 | FORMULA: =D38*$B$29 | VALUE: 87679.625
+     C38 | FORMULA: =$C$30*D38 | VALUE: 137.5
+     D38 | VALUE: 0.05
+     A39 | VALUE: Licence costs & others
+     B39 | FORMULA: =D39*$B$29 | VALUE: 52607.775
+     C39 | FORMULA: =$C$30*D39 | VALUE: 82.5
+     D39 | VALUE: 0.03
+     A40 | VALUE: Project management
+     B40 | FORMULA: ='Project management'!B13 | VALUE: 61477.5
+     C40 | FORMULA: =B40/B10 | VALUE: 116.6555977
+     D40 | FORMULA: =C40/C29 | VALUE: 0.03505803087
+     A42 | VALUE: TOTAL COSTS
+     B42 | FORMULA: =B22+B27+B28+B29+B33+B34 | VALUE: 2929456.075
+     C42 | FORMULA: =B42/B10 | VALUE: 5558.74018
+     D42 | FORMULA: =B42/B19 | VALUE: 0.7411653574
+     A44 | VALUE: GROSS PROFIT
+     B44 | VALUE: Gross profit (excl. taxes)
+     C44 | VALUE: Gross profit / revenue
+     A45 | FORMULA: =A16 | VALUE: I. Villa sale (without licence)
+     B45 | FORMULA: =B16-$B$42 | VALUE: 232543.925
+     C45 | FORMULA: =B45/B16 | VALUE: 0.07354330329
+     A46 | FORMULA: =A17 | VALUE: II. Villa sale (with licence)
+     B46 | FORMULA: =B17-$B$42 | VALUE: 496043.925
+     C46 | FORMULA: =B46/B17 | VALUE: 0.144809203
+     A47 | FORMULA: =A18 | VALUE: III. Villa sale (construction started)
+     B47 | FORMULA: =B18-$B$42 | VALUE: 759543.925
+     C47 | FORMULA: =B47/B18 | VALUE: 0.20589426
+     A48 | FORMULA: =A19 | VALUE: IV. Villa sale (construction finalized)
+     B48 | FORMULA: =B19-$B$42 | VALUE: 1023043.925
+     C48 | FORMULA: =B48/B19 | VALUE: 0.2588346426
+     A50 | VALUE: SUMMARY
+     B50 | VALUE: €
+     C50 | VALUE: margin / sales
+     A51 | VALUE: Total revenue
+     B51 | FORMULA: =B19 | VALUE: 3952500
+     C51 | FORMULA: =B51/B51 | VALUE: 1
+     A52 | VALUE: Total costs
+     B52 | FORMULA: =B42 | VALUE: 2929456.075
+     C52 | FORMULA: =B52/$B$51 | VALUE: 0.7411653574
+     A53 | VALUE: EBITDA
+     B53 | FORMULA: =B51-B52 | VALUE: 1023043.925
+     C53 | FORMULA: =B53/$B$51 | VALUE: 0.2588346426
+     A55 | VALUE: Commercialization costs
+     B55 | FORMULA: =C55*$B$51 | VALUE: 276675
+     C55 | VALUE: 0.07
+     A56 | VALUE: EBIT
+     B56 | FORMULA: =B53-B55 | VALUE: 746368.925
+     C56 | FORMULA: =B56/$B$51 | VALUE: 0.1888346426
+     A58 | VALUE: Financing costs
+     B58 | FORMULA: =C58*$B$52 | VALUE: 146472.8038
+     C58 | VALUE: 0.05
+     A59 | VALUE: EBT
+     B59 | FORMULA: =B56-B58 | VALUE: 599896.1213
+     C59 | FORMULA: =B59/$B$51 | VALUE: 0.1517763748
+     A61 | VALUE: Impuesto de sociedades (IS)
+     B61 | FORMULA: =D61*B59 | VALUE: 149974.0303
+     C61 | FORMULA: =B61/B51 | VALUE: 0.03794409369
+     D61 | VALUE: 0.25
+     E61 | VALUE: IS
+     A62 | VALUE: ITP devolution
+     B62 | FORMULA: =B24 | VALUE: 131250
+     C62 | FORMULA: =B62/B51 | VALUE: 0.03320683112
+     A63 | VALUE: EAT
+     B63 | FORMULA: =B59-B61+B62 | VALUE: 581172.0909
+     C63 | FORMULA: =B63/$B$51 | VALUE: 0.1470391122
+     A65 | VALUE: ROI ANALYSIS
+     A66 | VALUE: Equity invested
+     B66 | FORMULA: =B22+B27+B28+B33+B34 | VALUE: 1175863.575
+     A67 | VALUE: Net profit (all included, for distribution)
+     B67 | FORMULA: =B63 | VALUE: 581172.0909
+     A68 | VALUE: ROE
+     B68 | FORMULA: =B67/B66 | VALUE: 0.4942512918
+     A70 | VALUE: IRR ANALYSIS
+     B70 | VALUE: €
+     C70 | VALUE: %
+     A71 | VALUE: Revenue
+     B71 | FORMULA: =B51 | VALUE: 3952500
+     A72 | VALUE: Total costs with financing & commercialization
+     B72 | FORMULA: =B52+B55+B58 | VALUE: 3352603.879
+     A73 | VALUE: Net profit (EAT)
+     B73 | FORMULA: =B63 | VALUE: 581172.0909
+     A74 | VALUE: Equity return
+     B74 | FORMULA: =sum(B75:B76) | VALUE: 1757035.666
+     A75 | VALUE: Equity invested
+     B75 | FORMULA: =B22+B27+B28+B33+B34 | VALUE: 1175863.575
+     A76 | VALUE: Profit after taxes
+     B76 | FORMULA: =B73 | VALUE: 581172.0909
+     A77 | VALUE: ROE
+     B77 | FORMULA: =B73/B75 | VALUE: 0.4942512918
+     A78 | VALUE: ROI
+     A79 | VALUE: IRR (over 3 years)
+     B79 | FORMULA: =IRR(B80:B82) | VALUE: 0.2223957182
+     C79 | FORMULA: =IRR(C80:C83) | VALUE: 0.1432500086
+     A80 | VALUE: 2026
+     B80 | FORMULA: =-(B22+B27+B33+B34) | VALUE: -1175863.575
+     C80 | FORMULA: =B80 | VALUE: -1175863.575
+     D80 | VALUE: equity invested (land, fees, soft costs)
+     A81 | VALUE: 2027
+     B81 | VALUE: 0
+     C81 | FORMULA: =B81 | VALUE: 0
+     D81 | VALUE: loans to fund the construction
+     A82 | VALUE: 2028
+     B82 | FORMULA: =B74 | VALUE: 1757035.666
+     C82 | VALUE: 0
+     D82 | VALUE: equity repaid + profit after tax
+     A83 | VALUE: 2029
+     B83 | VALUE: 0
+     C83 | FORMULA: =B82 | VALUE: 1757035.666
+     B84 | VALUE: over 3 years
+     C84 | VALUE: over 4 years
+     A86 | VALUE: CAP TABLE
+     B86 | VALUE: € invested
+     C86 | VALUE: € currently invested
+     D86 | VALUE: % of profits
+     E86 | VALUE: € net profit
+     F86 | VALUE: multiple
+     A87 | VALUE: Kakarot SL
+     B87 | FORMULA: =B66/2 | VALUE: 587931.7875
+     C87 | FORMULA: =B22+B35 | VALUE: 793521.85
+     D87 | FORMULA: =B87/$B$89 | VALUE: 0.5
+     E87 | FORMULA: =D87*$E$89 | VALUE: 290586.0455
+     F87 | FORMULA: =(B87+E87)/B87 | VALUE: 1.494251292
+     A88 | VALUE: Inimex SL
+     B88 | FORMULA: =B87 | VALUE: 587931.7875
+     C88 | VALUE: 0
+     D88 | FORMULA: =B88/$B$89 | VALUE: 0.5
+     E88 | FORMULA: =D88*$E$89 | VALUE: 290586.0455
+     F88 | FORMULA: =(B88+E88)/B88 | VALUE: 1.494251292
+     B89 | FORMULA: =sum(B87:B88) | VALUE: 1175863.575
+     C89 | FORMULA: =sum(C87:C88) | VALUE: 793521.85
+     D89 | FORMULA: =sum(D87:D88) | VALUE: 1
+     E89 | FORMULA: =B67 | VALUE: 581172.0909
+     F89 | FORMULA: =(B89+E89)/B89 | VALUE: 1.494251292
+
+==========================================================================================
+SHEET: Project management
+==========================================================================================
+Dimensions: A1:C14  max_row=14 max_col=3
+
+      A1 | VALUE: Project name
+      B1 | FORMULA: =Hypothesis!B1 | VALUE: Villa Buganvilleas
+      A2 | VALUE: Adress
+      B2 | FORMULA: =Hypothesis!B2 | VALUE: Buganvillas 14, 29018 Malaga
+      A3 | VALUE: Hypothesis
+      B3 | FORMULA: =Hypothesis!B3 | VALUE: Base case
+      A5 | VALUE: PROJECT MANAGEMENT
+      A6 | VALUE: Principio: en cuanto se tenga el proyecto de ejecucion
+      A8 | VALUE: Revision del proyecto de ejecucion
+      B8 | VALUE: 3000
+      A9 | VALUE: Proceso de licitacion con las constructoras
+     A10 | VALUE: Ejecucion de la obra
+     B10 | FORMULA: =C10*Hypothesis!B30 | VALUE: 43477.5
+     C10 | VALUE: 0.03
+     A11 | VALUE: Final de la obra
+     B11 | VALUE: 15000
+     A12 | VALUE: Postventa
+     A13 | VALUE: TOTAL COSTS
+     B13 | FORMULA: =sum(B8:B12) | VALUE: 61477.5
+
+------------------------------------------------------------------------------------------
+SHEET (BRIEF): Hypothesis_worst
+------------------------------------------------------------------------------------------
+Dimensions: A1:Z78  max_row=78 max_col=26
+      A1 | Project name
+      B1 | Villa El Cantal
+      A2 | Adress
+      B2 | Leoni Benabu 41, 29018 Malaga
+      A3 | Hypothesis
+      B3 | Worst
+      A5 | ASSUMPTIONS
+      A6 | Tipologia edificacion
+      B6 | Unifamiliar aislada UAS
+      A7 | Superficie parcela adoptada
+      B7 | 1006.75
+      C7 | m2
+      A8 | Ratio edificabilidad
+      B8 | 0.25
+      A9 | Superficie edificabilidad total
+      B9 | 251.6875
+      C9 | m2
+     A10 | Superficie construida total
+     B10 | 503.38
+     C10 | m2
+     A11 | Construida sobre rasante
+     B11 | 251.69
+     C11 | m2
+     A12 | Construida bajo rasante
+     B12 | 251.69
+     C12 | m2
+     A13 | Exterior jardines y ZZCC urbanizacion
+     B13 | 755.06
+     C13 | m2
+     A15 | SALES
+     B15 | Revenue (excl. VAT)
+     C15 | sale price / sqm
+     A16 | I. Villa sale (without licence)
+     B16 | 2013520
+     C16 | 4000
+     A17 | II. Villa sale (with licence)
+     B17 | 2265210
+     C17 | 4500
+     A18 | III. Villa sale (construction started)
+     B18 | 2516900
+     C18 | 5000
+     A19 | IV. Villa sale (construction finalized)
+     B19 | 2768590
+     C19 | 5500
+     A21 | COSTS
+     B21 | Costs (excl. VAT)
+     C21 | cost / sqm
+     D21 | %
+     F21 | PROJECT MANAGEMENT
+     G21 | Costs (excl. VAT)
+     H21 | %
+     K21 | EXAMPLE
+     L21 | Costs (excl. VAT)
+     M21 | %
+     A22 | Hard cost - land purchase
+     B22 | 599980
+     C22 | 595.9572883
+     F22 | Hard cost - construction costs planned
+     G22 | 1674996.95
+     K22 | Hard cost - construction costs planned
+     L22 | 1674996.95
+     A23 | Land asking price
+     B23 | 540000
+     F23 | Project management commission
+     G23 | 83749.8475
+     H23 | 0.05
+     I23 | Fixed
+     K23 | Hard cost - construction costs real
+     L23 | 1450000
+     A24 | ITP (taxes)
+     B24 | 37800
+     D24 | 0.07
+     F24 | Bonus - 15% of savings vs budget
+     H24 | 0.15
+     I24 | Max 20k€
+     K24 | Project management commission
+     L24 | 83749.8475
+     M24 | 0.05
+     A25 | Notary & registro
+     B25 | 2200
+     D25 | 0.003666788893
+     F25 | Bonus - 2k€ per month ahead of schedule
+     I25 | Max 10k€
+     K25 | Bonus - 15% of savings vs budget
+     L25 | 33749.5425
+     M25 | 0.15
+     N25 | Max 20k€
+     A26 | Sales commission
+     B26 | 19980
+     D26 | 0.037
+     K26 | Bonus - 2k€ per month ahead of schedule
+     L26 | 4000
+     N26 | Max 10k€
+     A27 | Hard cost - setup costs
+     B27 | 17999.4
+     D27 | 0.03
+     F27 | Payment steps
+     K27 | TOTAL COMMISSION
+     L27 | 121499.39
+     A28 | Hard cost - urbanization costs
+     B28 | 0
+     C28 | 0
+     D28 | 0
+     F28 | Contract signed
+     G28 | 0.1
+     A29 | Hard cost - construction costs
+     B29 | 1674996.95
+     C29 | 3327.5
+     F29 | Permit approved
+     G29 | 0.1
+     A30 | PEM costs
+     B30 | 1384295
+     C30 | 2750
+     F30 | Contractor selected
+     G30 | 0.15
+     A31 | PEC costs
+     B31 | 138429.5
+     C31 | 275
+     D31 | 0.1
+     F31 | 50% construction progress
+     G31 | 0.3
+     A32 | Other costs (insurance, taxes)
+     B32 | 152272.45
+     C32 | 302.5
+     D32 | 0.1
+     F32 | Structure topped out
+     G32 | 0.15
+     A33 | Hard cost - contingencies
+     B33 | 83749.8475
+     D33 | 0.05
+     F33 | Delivery
+     G33 | 0.2
+     A34 | Soft cost - All costs
+     B34 | 351749.3595
+     C34 | 698.775
+     D34 | 0.1
+     G34 | 1
+     A35 | Arquitecture costs
+     B35 | 167499.695
+     C35 | 275
+     D35 | 0.1
+     A36 | Aparejador
+     B36 | 83749.8475
+     C36 | 137.5
+     D36 | 0.05
+     A37 | Licence costs & others
+     B37 | 50249.9085
+     C37 | 82.5
+     D37 | 0.03
+     A38 | Project management
+     B38 | 50249.9085
+     C38 | 82.5
+     D38 | 0.03
+     A40 | TOTAL COSTS
+     B40 | 2728475.557
+     C40 | 5420.30982
+     D40 | 0.9855108763
+     A42 | GROSS PROFIT
+     B42 | Gross profit (excl. taxes)
+     C42 | Gross profit / revenue
+     A43 | I. Villa sale (without licence)
+     B43 | -714955.557
+     C43 | -0.3550774549
+     A44 | II. Villa sale (with licence)
+     B44 | -463265.557
+     C44 | -0.2045132932
+     A45 | III. Villa sale (construction started)
+     B45 | -211575.557
+     C45 | -0.08406196392
+     A46 | IV. Villa sale (construction finalized)
+     B46 | 40114.443
+     C46 | 0.01448912371
+     A48 | SUMMARY
+     B48 | €
+     C48 | margin / sales
+     A49 | Total revenue
+     B49 | 2768590
+     C49 | 1
+     A50 | Total costs
+     B50 | 2728475.557
+     C50 | 0.9855108763
+     A51 | EBITDA
+     B51 | 40114.443
+     C51 | 0.01448912371
+     A53 | Commercialization costs
+     B53 | 110743.6
+     C53 | 0.04
+     A54 | EBIT
+     B54 | -70629.157
+     C54 | -0.02551087629
+     A56 | Financing costs
+     B56 | 138429.5
+     C56 | 0.05
+     A57 | EBT
+     B57 | -209058.657
+     C57 | -0.07551087629
+     A59 | Impuesto de sociedades (IS)
+     B59 | 10028.61075
+     C59 | 0.003622280926
+     D59 | 0.25
+     E59 | IS
+     A60 | EAT
+     B60 | -219087.2678
+     C60 | -0.07913315722
+     A62 | ROI Analysis
+     A63 | Equity invested
+     B63 | 1053478.607
+     A64 | Net profit (all included)
+     B64 | -219087.2678
+     A65 | ROI
+     B65 | -0.2079655593
+     A67 | IRR ANALYSIS
+     B67 | €
+     C67 | %
+     A68 | Revenue
+     B68 | 2768590
+     A69 | Total costs with financing & commercialization
+     B69 | 2977648.657
+     A70 | Net profit (EAT)
+     B70 | -219087.2678
+     A71 | Equity return
+     B71 | 834391.3393
+     A72 | Equity invested
+     B72 | 1053478.607
+     A73 | Profit after taxes
+     B73 | -219087.2678
+     A74 | ROI
+     B74 | -0.2079655593
+     A75 | IRR (over 3 years)
+     B75 | -0.1100368318
+     A76 | 2026
+     B76 | -1053478.607
+     C76 | equity invested (land, fees, soft costs)
+     A77 | 2027
+     B77 | 0
+     C77 | loans to fund the construction
+     A78 | 2028
+     B78 | 834391.3393
+     C78 | equity repaid + profit after tax
+
+------------------------------------------------------------------------------------------
+SHEET (BRIEF): Hypothesis_best
+------------------------------------------------------------------------------------------
+Dimensions: A1:Z78  max_row=78 max_col=26
+      A1 | Project name
+      B1 | Villa El Cantal
+      A2 | Adress
+      B2 | Leoni Benabu 41, 29018 Malaga
+      A3 | Hypothesis
+      B3 | Best
+      A5 | ASSUMPTIONS
+      A6 | Tipologia edificacion
+      B6 | Unifamiliar aislada UAS
+      A7 | Superficie parcela adoptada
+      B7 | 1006.75
+      C7 | m2
+      A8 | Ratio edificabilidad
+      B8 | 0.25
+      A9 | Superficie edificabilidad total
+      B9 | 251.6875
+      C9 | m2
+     A10 | Superficie construida total
+     B10 | 503.38
+     C10 | m2
+     A11 | Construida sobre rasante
+     B11 | 251.69
+     C11 | m2
+     A12 | Construida bajo rasante
+     B12 | 251.69
+     C12 | m2
+     A13 | Exterior jardines y ZZCC urbanizacion
+     B13 | 755.06
+     C13 | m2
+     A15 | SALES
+     B15 | Revenue (excl. VAT)
+     C15 | sale price / sqm
+     A16 | I. Villa sale (without licence)
+     B16 | 2768590
+     C16 | 5500
+     A17 | II. Villa sale (with licence)
+     B17 | 3271970
+     C17 | 6500
+     A18 | III. Villa sale (construction started)
+     B18 | 3775350
+     C18 | 7500
+     A19 | IV. Villa sale (construction finalized)
+     B19 | 4530420
+     C19 | 9000
+     A21 | COSTS
+     B21 | Costs (excl. VAT)
+     C21 | cost / sqm
+     D21 | %
+     F21 | PROJECT MANAGEMENT
+     G21 | Costs (excl. VAT)
+     H21 | %
+     K21 | EXAMPLE
+     L21 | Costs (excl. VAT)
+     M21 | %
+     A22 | Hard cost - land purchase
+     B22 | 599980
+     C22 | 595.9572883
+     F22 | Hard cost - construction costs planned
+     G22 | 1674996.95
+     K22 | Hard cost - construction costs planned
+     L22 | 1674996.95
+     A23 | Land asking price
+     B23 | 540000
+     F23 | Project management commission
+     G23 | 83749.8475
+     H23 | 0.05
+     I23 | Fixed
+     K23 | Hard cost - construction costs real
+     L23 | 1450000
+     A24 | ITP (taxes)
+     B24 | 37800
+     D24 | 0.07
+     F24 | Bonus - 15% of savings vs budget
+     H24 | 0.15
+     I24 | Max 20k€
+     K24 | Project management commission
+     L24 | 83749.8475
+     M24 | 0.05
+     A25 | Notary & registro
+     B25 | 2200
+     D25 | 0.003666788893
+     F25 | Bonus - 2k€ per month ahead of schedule
+     I25 | Max 10k€
+     K25 | Bonus - 15% of savings vs budget
+     L25 | 33749.5425
+     M25 | 0.15
+     N25 | Max 20k€
+     A26 | Sales commission
+     B26 | 19980
+     D26 | 0.037
+     K26 | Bonus - 2k€ per month ahead of schedule
+     L26 | 4000
+     N26 | Max 10k€
+     A27 | Hard cost - setup costs
+     B27 | 17999.4
+     D27 | 0.03
+     F27 | Payment steps
+     K27 | TOTAL COMMISSION
+     L27 | 121499.39
+     A28 | Hard cost - urbanization costs
+     B28 | 0
+     C28 | 0
+     D28 | 0
+     F28 | Contract signed
+     G28 | 0.1
+     A29 | Hard cost - construction costs
+     B29 | 1674996.95
+     C29 | 3327.5
+     F29 | Permit approved
+     G29 | 0.1
+     A30 | PEM costs
+     B30 | 1384295
+     C30 | 2750
+     F30 | Contractor selected
+     G30 | 0.15
+     A31 | PEC costs
+     B31 | 138429.5
+     C31 | 275
+     D31 | 0.1
+     F31 | 50% construction progress
+     G31 | 0.3
+     A32 | Other costs (insurance, taxes)
+     B32 | 152272.45
+     C32 | 302.5
+     D32 | 0.1
+     F32 | Structure topped out
+     G32 | 0.15
+     A33 | Hard cost - contingencies
+     B33 | 83749.8475
+     D33 | 0.05
+     F33 | Delivery
+     G33 | 0.2
+     A34 | Soft cost - All costs
+     B34 | 351749.3595
+     C34 | 698.775
+     D34 | 0.1
+     G34 | 1
+     A35 | Arquitecture costs
+     B35 | 167499.695
+     C35 | 275
+     D35 | 0.1
+     A36 | Aparejador
+     B36 | 83749.8475
+     C36 | 137.5
+     D36 | 0.05
+     A37 | Licence costs & others
+     B37 | 50249.9085
+     C37 | 82.5
+     D37 | 0.03
+     A38 | Project management
+     B38 | 50249.9085
+     C38 | 82.5
+     D38 | 0.03
+     A40 | TOTAL COSTS
+     B40 | 2728475.557
+     C40 | 5420.30982
+     D40 | 0.6022566466
+     A42 | GROSS PROFIT
+     B42 | Gross profit (excl. taxes)
+     C42 | Gross profit / revenue
+     A43 | I. Villa sale (without licence)
+     B43 | 40114.443
+     C43 | 0.01448912371
+     A44 | II. Villa sale (with licence)
+     B44 | 543494.443
+     C44 | 0.1661061816
+     A45 | III. Villa sale (construction started)
+     B45 | 1046874.443
+     C45 | 0.2772920241
+     A46 | IV. Villa sale (construction finalized)
+     B46 | 1801944.443
+     C46 | 0.3977433534
+     A48 | SUMMARY
+     B48 | €
+     C48 | margin / sales
+     A49 | Total revenue
+     B49 | 4530420
+     C49 | 1
+     A50 | Total costs
+     B50 | 2728475.557
+     C50 | 0.6022566466
+     A51 | EBITDA
+     B51 | 1801944.443
+     C51 | 0.3977433534
+     A53 | Commercialization costs
+     B53 | 181216.8
+     C53 | 0.04
+     A54 | EBIT
+     B54 | 1620727.643
+     C54 | 0.3577433534
+     A56 | Financing costs
+     B56 | 226521
+     C56 | 0.05
+     A57 | EBT
+     B57 | 1394206.643
+     C57 | 0.3077433534
+     A59 | Impuesto de sociedades (IS)
+     B59 | 450486.1108
+     C59 | 0.09943583834
+     D59 | 0.25
+     E59 | IS
+     A60 | EAT
+     B60 | 943720.5323
+     C60 | 0.208307515
+     A62 | ROI Analysis
+     A63 | Equity invested
+     B63 | 1053478.607
+     A64 | Net profit (all included)
+     B64 | 943720.5323
+     A65 | ROI
+     B65 | 0.8958136653
+     A67 | IRR ANALYSIS
+     B67 | €
+     C67 | %
+     A68 | Revenue
+     B68 | 4530420
+     A69 | Total costs with financing & commercialization
+     B69 | 3136213.357
+     A70 | Net profit (EAT)
+     B70 | 943720.5323
+     A71 | Equity return
+     B71 | 1997199.139
+     A72 | Equity invested
+     B72 | 1053478.607
+     A73 | Profit after taxes
+     B73 | 943720.5323
+     A74 | ROI
+     B74 | 0.8958136653
+     A75 | IRR (over 3 years)
+     B75 | 0.3768854946
+     A76 | 2026
+     B76 | -1053478.607
+     C76 | equity invested (land, fees, soft costs)
+     A77 | 2027
+     B77 | 0
+     C77 | loans to fund the construction
+     A78 | 2028
+     B78 | 1997199.139
+     C78 | equity repaid + profit after tax
+
+------------------------------------------------------------------------------------------
+SHEET (BRIEF): Comparables
+------------------------------------------------------------------------------------------
+Dimensions: A1:M23  max_row=23 max_col=13
+      A1 | Project name
+      B1 | Villa El Cantal
+      A2 | Adress
+      B2 | Leoni Benabu 41, 29018 Malaga
+      A3 | Hypothesis
+      B3 | Base
+      H4 | coefficient
+      A5 | MARKET COMPARABLES
+      B5 | Location
+      C5 | Year sold
+      D5 | Status
+      E5 | Sale price
+      F5 | sqm built
+      G5 | sale price / sqm
+      H5 | sales status
+      I5 | localisation
+      J5 | quality / premium
+      K5 | real sale price / sqm
+      L5 | reason
+      M5 | link
+      A6 | Pinares Hill #1
+      B6 | Pinares de San Anton
+      C6 | -
+      D6 | Reserved
+      E6 | 4800000
+      F6 | 486
+      G6 | 9876.54321
+      H6 | 0.9
+      I6 | 1
+      J6 | 0.9
+      K6 | 9876.54321
+      L6 | Same location
+      M6 | https://www.idealista.com/inmueble/108642153/
+      A7 | Pinares Hill #2
+      B7 | Pinares de San Anton
+      C7 | 2025
+      D7 | Reserved
+      E7 | 3800000
+      F7 | 412
+      G7 | 9223.300971
+      H7 | 0.9
+      I7 | 1
+      J7 | 0.9
+      K7 | 9223.300971
+      L7 | Same location
+      M7 | https://resources.lucasfox.com/property/mlg52486-floorplans.pdf
+      A8 | Pinares Hill #3
+      B8 | Pinares de San Anton
+      C8 | 2025
+      D8 | For sale
+      E8 | 2475000
+      F8 | 309
+      G8 | 8009.708738
+      H8 | 0.8
+      I8 | 1
+      J8 | 0.9
+      K8 | 7119.7411
+      L8 | Same location
+      M8 | https://www.idealista.com/fr/inmueble/106417665/
+      A9 | Pinares Hill #4
+      B9 | Pinares de San Anton
+      C9 | 2025
+      D9 | For sale
+      E9 | 2800000
+      F9 | 341
+      G9 | 8211.143695
+      H9 | 0.8
+      I9 | 1
+      J9 | 0.9
+      K9 | 7298.794396
+      L9 | Same location
+      M9 | https://www.idealista.com/fr/inmueble/105059159/
+     A10 | Villa Los Alcornoques
+     B10 | Benahavis
+     C10 | 2023
+     D10 | Sold
+     E10 | 7200000
+     F10 | 627
+     G10 | 11483.25359
+     H10 | 1
+     I10 | 1.3
+     J10 | 1
+     K10 | 8833.271991
+     L10 | Marbella (+)
+     M10 | https://flow81.com/project/villa-alcornoque/
+     A11 | Villa Las Nubes
+     B11 | Sotogrande
+     C11 | 2022
+     D11 | Sold
+     E11 | 4500000
+     F11 | 439
+     G11 | 10250.56948
+     H11 | 1
+     I11 | 1.3
+     J11 | 1
+     K11 | 7885.053443
+     L11 | Marbella (+)
+     M11 | https://flow81.com/project/villa-calle-grazalema/
+     A12 | Villa en el Candado
+     B12 | El Candado
+     C12 | -
+     D12 | Construction in progress
+     E12 | 2450000
+     F12 | 420
+     G12 | 5833.333333
+     H12 | 0.85
+     I12 | 0.95
+     J12 | 0.9
+     K12 | 5799.220273
+     L12 | Close location
+     M12 | https://www.lucasfox.es/comprar-vivienda/espana/costa-del-sol/malaga/pinares-de-san-anton-el-candado/casa-villa/mlg44689.html
+     A13 | Leoni Benabu (neighbour)
+     B13 | Pinares de San Anton
+     C13 | -
+     D13 | Construction in progress
+     E13 | 6500000
+     F13 | 660
+     G13 | 9848.484848
+     H13 | 0.85
+     I13 | 1
+     J13 | 1
+     K13 | 8371.212121
+     L13 | Same location
+     M13 | -
+     A14 | Pinares house
+     B14 | Pinares de San Anton
+     C14 | -
+     D14 | For sale
+     E14 | 4295000
+     F14 | 516
+     G14 | 8323.643411
+     H14 | 0.8
+     I14 | 1
+     J14 | 0.7
+     K14 | 9512.735327
+     L14 | Same location
+     M14 | https://www.idealista.com/fr/inmueble/107064042/
+     A15 | Pinares house
+     B15 | Pinares de San Anton
+     C15 | -
+     D15 | For sale
+     E15 | 3450000
+     F15 | 706
+     G15 | 4886.685552
+     H15 | 0.8
+     I15 | 1
+     J15 | 0.7
+     K15 | 5584.783488
+     L15 | Same location
+     M15 | https://www.idealista.com/fr/inmueble/108640971/
+     A16 | Pinares house
+     B16 | Pinares de San Anton
+     C16 | -
+     D16 | For sale
+     E16 | 3000000
+     F16 | 400
+     G16 | 7500
+     H16 | 0.8
+     I16 | 1
+     J16 | 0.7
+     K16 | 8571.428571
+     L16 | Same location
+     M16 | https://www.idealista.com/fr/inmueble/109457637/
+     A17 | Pinares house
+     B17 | Pinares de San Anton
+     C17 | -
+     D17 | For sale
+     E17 | 4000000
+     F17 | 830
+     G17 | 4819.277108
+     H17 | 0.8
+     I17 | 1
+     J17 | 0.7
+     K17 | 5507.745267
+     L17 | Same location
+     M17 | https://www.idealista.com/fr/inmueble/82580369/
+     A18 | Casa Farber
+     B18 | Pinares de San Anton
+     C18 | 2024
+     D18 | Sold
+     E18 | 2500000
+     F18 | 450
+     G18 | 5555.555556
+     H18 | 1
+     I18 | 1
+     J18 | 0.8
+     K18 | 6944.444444
+     L18 | Same location
+     M18 | -
+     J20 | average
+     K20 | 7732.9442
+     J21 | median
+     K21 | 7885.053443
+     J22 | highest point
+     K22 | 9876.54321
+     J23 | lowest point
+     K23 | 5507.745267
+
+------------------------------------------------------------------------------------------
+SHEET (BRIEF): Architecture
+------------------------------------------------------------------------------------------
+Dimensions: A1:A1  max_row=1 max_col=1
+
+==========================================================================================
+SKIPPED SHEETS: El Cantal
+==========================================================================================

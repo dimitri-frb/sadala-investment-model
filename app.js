@@ -36,10 +36,12 @@ function compute(opp, scenarioKey) {
   const setupCost = acquisitionTotal * opp.setupRate;
 
   // --- Hard costs (construction) ---
+  // `otherCostsBase` defaults to "PEM" but can be "PEM_PLUS_PEC" (source models differ).
   const H = opp.hardCosts;
   const pem = s.pemPerSqm * builtTotal;
   const pec = pem * H.pecRate;
-  const otherCosts = pem * H.otherCostsRate;  // now % of PEM only
+  const otherBase = H.otherCostsBase === "PEM_PLUS_PEC" ? (pem + pec) : pem;
+  const otherCosts = otherBase * H.otherCostsRate;
   const construction = pem + pec + otherCosts;
   const contingencies = construction * H.contingenciesRate;
 
@@ -62,7 +64,10 @@ function compute(opp, scenarioKey) {
   const financing = totalCosts * opp.financingRate;
   const ebt = ebit - financing;
   const tax = ebt * opp.taxRate;
-  const eat = ebt - tax;
+  // VAT paid on land acquisition is recovered at exit (Spanish IVA regime).
+  // ITP (impuesto de transmisiones) is NOT recoverable, so it stays as a cost.
+  const vatRefund = A.landTaxRegime === "VAT" ? landTax : 0;
+  const eat = ebt - tax + vatRefund;
 
   // --- Equity & returns ---
   const equityInvested = acquisitionTotal + setupCost + opp.urbanizationCost
@@ -95,7 +100,7 @@ function compute(opp, scenarioKey) {
       architecture, aparejador, licence, projectManagement, total: softCost,
     },
     totalCosts,
-    pnl: { revenue, totalCosts, ebitda, commercialization, ebit, financing, ebt, tax, eat },
+    pnl: { revenue, totalCosts, ebitda, commercialization, ebit, financing, ebt, tax, vatRefund, eat },
     returns: {
       equityInvested, netProfit, roe, rentabilidad,
       equityReturn, durationMonths,
@@ -522,6 +527,13 @@ function renderPnL(opp) {
           <td class="num">−${fmtEUR(r.pnl.tax)}</td>
           <td class="num pct-text-cell">${pctCell(r.pnl.tax, rev)}</td>
         </tr>
+        ${r.pnl.vatRefund > 0 ? `
+        <tr class="line-addition">
+          <td><span class="triangle-spacer"></span> VAT recovery (${opp.acquisition.landTaxRegime} recuperated at exit)</td>
+          <td class="num">+${fmtEUR(r.pnl.vatRefund)}</td>
+          <td class="num pct-text-cell">${pctCell(r.pnl.vatRefund, rev)}</td>
+        </tr>
+        ` : ""}
 
         <tr class="section-spacer"><td colspan="3"></td></tr>
 

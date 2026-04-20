@@ -304,6 +304,15 @@ tr.line-deduction td {
 tr.line-deduction td:first-child { padding-left: 32px; }
 tr.line-deduction .num { color: #b91c1c; }
 
+/* Addition lines (e.g. VAT recovery) — same shape as deduction but positive */
+tr.line-addition td {
+  color: #6b7280;
+  font-size: 13px;
+  background: #f0fdf4;
+}
+tr.line-addition td:first-child { padding-left: 32px; }
+tr.line-addition .num { color: #059669; font-weight: 500; }
+
 /* Cost rows (expandable + leaf) */
 tr.cost-row td {
   padding: 10px 14px;
