@@ -41,11 +41,13 @@ h3 { font-size: 14px; font-weight: 600; margin: 28px 0 10px; color: #3a3f4b; tex
 /* ===== Tabs ===== */
 .tabs {
   display: flex;
-  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
   padding: 0 32px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
 }
+.tabs-list { display: flex; gap: 4px; }
 .tab-btn {
   padding: 12px 18px;
   background: transparent;
@@ -59,6 +61,40 @@ h3 { font-size: 14px; font-weight: 600; margin: 28px 0 10px; color: #3a3f4b; tex
 }
 .tab-btn:hover { color: #1a1d24; }
 .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+.scenario-picker.global {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.scenario-picker.global label {
+  color: #7a808c;
+  font-size: 13px;
+}
+.scenario-picker.global select {
+  font: inherit;
+  padding: 5px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+}
+
+/* Small inline tag next to the h2 title showing active scenario */
+.scenario-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 6px;
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+}
+.scenario-tag.scen-worst { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.scenario-tag.scen-base  { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+.scenario-tag.scen-best  { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
 
 main { padding: 32px; max-width: 1200px; margin: 0 auto; }
 

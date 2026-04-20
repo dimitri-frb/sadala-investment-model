@@ -441,17 +441,7 @@ function renderPnL(opp) {
   }
 
   const html = `
-    <div class="pnl-head">
-      <h2>P&L — ${opp.name} ${statusBadgeHTML(opp)}</h2>
-      <div class="scenario-picker">
-        <label for="scenario-select">Scenario:</label>
-        <select id="scenario-select">
-          <option value="worst" ${state.scenario === "worst" ? "selected" : ""}>Worst case</option>
-          <option value="base"  ${state.scenario === "base"  ? "selected" : ""}>Base case</option>
-          <option value="best"  ${state.scenario === "best"  ? "selected" : ""}>Best case</option>
-        </select>
-      </div>
-    </div>
+    <h2>P&L — ${opp.name} ${statusBadgeHTML(opp)} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
 
     <table class="pnl">
       <thead>
@@ -560,17 +550,7 @@ function renderInvestors(opp) {
   }));
 
   return `
-    <div class="pnl-head">
-      <h2>Investors — ${opp.name} ${statusBadgeHTML(opp)}</h2>
-      <div class="scenario-picker">
-        <label for="scenario-select-inv">Scenario:</label>
-        <select id="scenario-select-inv">
-          <option value="worst" ${state.scenario === "worst" ? "selected" : ""}>Worst case</option>
-          <option value="base"  ${state.scenario === "base"  ? "selected" : ""}>Base case</option>
-          <option value="best"  ${state.scenario === "best"  ? "selected" : ""}>Best case</option>
-        </select>
-      </div>
-    </div>
+    <h2>Investors — ${opp.name} ${statusBadgeHTML(opp)} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
 
     <h3>ROE analysis</h3>
     <table class="kv">
@@ -647,13 +627,10 @@ function renderTab() {
     case "investors":   main.innerHTML = renderInvestors(opp); break;
   }
 
-  // Wire up scenario pickers
-  const picker = document.getElementById("scenario-select") || document.getElementById("scenario-select-inv");
-  if (picker) {
-    picker.addEventListener("change", (e) => {
-      state.scenario = e.target.value;
-      renderTab();
-    });
+  // Keep the global scenario picker in sync with current state
+  const globalScenario = document.getElementById("global-scenario-select");
+  if (globalScenario && globalScenario.value !== state.scenario) {
+    globalScenario.value = state.scenario;
   }
 
   // Wire up expand/collapse on cost rows
@@ -695,6 +672,14 @@ function init() {
       state.tab = btn.dataset.tab;
       renderTab();
     });
+  });
+
+  // Global scenario picker (wired once; persists across tab changes)
+  const globalScenario = document.getElementById("global-scenario-select");
+  globalScenario.value = state.scenario;
+  globalScenario.addEventListener("change", (e) => {
+    state.scenario = e.target.value;
+    renderTab();
   });
 
   // React to back/forward navigation (hash changes externally)
