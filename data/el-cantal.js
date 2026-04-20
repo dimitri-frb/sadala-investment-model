@@ -64,6 +64,21 @@ window.OPPORTUNITIES["el-cantal"] = {
   // "12-month delay" IRR uses projectDurationMonths + 12.
   projectDurationMonths: 36,
 
+  // ====== TIMELINE ======
+  // Each milestone has `status: "done" | "expected"`.
+  // Date format: "YYYY-MM". Use `offsetFrom: <id> + offsetMonths` to
+  // derive a date relative to an earlier milestone (e.g. delivery =
+  // construction start + 18 months).
+  timeline: [
+    { id: "acquired",     label: "Property acquired",           date: "2025-09", status: "done" },
+    { id: "pb-submitted", label: "Basic project submitted",     date: "2026-01", status: "done" },
+    { id: "pb-approved",  label: "Basic project approved",      date: "2026-09", status: "expected" },
+    { id: "pe-submitted", label: "Execution project submitted", date: "2026-09", status: "expected" },
+    { id: "pe-approved",  label: "Execution project approved",  date: "2026-10", status: "expected" },
+    { id: "construction", label: "Construction start",          date: "2026-10", status: "expected" },
+    { id: "delivery",     label: "Delivery",                    offsetFrom: "construction", offsetMonths: 18, status: "expected" },
+  ],
+
   // ====== SCENARIO ASSUMPTIONS ======
   // Only these values change between worst / base / best.
   scenarios: {

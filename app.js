@@ -137,6 +137,61 @@ function renderPlaceholder(opp) {
   `;
 }
 
+// ===== Date helpers (YYYY-MM) =====
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function addMonths(ym, n) {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(y, m - 1 + n, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+function fmtMonthYear(ym) {
+  if (!ym) return "";
+  const [y, m] = ym.split("-").map(Number);
+  return `${MONTH_NAMES[m - 1]} ${y}`;
+}
+
+// ===== Timeline =====
+function resolveTimeline(timeline) {
+  const byId = {};
+  return timeline.map(item => {
+    let date = item.date;
+    if (!date && item.offsetFrom) {
+      const anchor = byId[item.offsetFrom];
+      if (anchor && anchor.date) date = addMonths(anchor.date, item.offsetMonths || 0);
+    }
+    const resolved = { ...item, date };
+    byId[item.id] = resolved;
+    return resolved;
+  });
+}
+
+function renderTimeline(opp) {
+  if (!opp.timeline || !opp.timeline.length) return "";
+  const items = resolveTimeline(opp.timeline);
+
+  // Build: item, line-to-next, item, line-to-next, ... item
+  let inner = "";
+  items.forEach((t, i) => {
+    inner += `
+      <div class="tl-item tl-${t.status}">
+        <div class="tl-dot"></div>
+        <div class="tl-label">${t.label}</div>
+        <div class="tl-date">${fmtMonthYear(t.date)}</div>
+      </div>`;
+    if (i < items.length - 1) {
+      // Line color is driven by the *next* milestone's status:
+      // done if we've completed it, dashed if still upcoming.
+      inner += `<div class="tl-line tl-${items[i + 1].status}"></div>`;
+    }
+  });
+
+  return `
+    <div class="timeline-section">
+      <h3>Timeline</h3>
+      <div class="timeline">${inner}</div>
+    </div>`;
+}
+
 // ===== Percentage bar component =====
 function pctBar(value, total, { color = "neutral" } = {}) {
   const pct = total ? value / total : 0;
@@ -171,6 +226,8 @@ function renderSummary(opp) {
         <div class="muted">${opp.address || "Address TBD"}</div>
       </div>
     </div>
+    ${renderTimeline(opp)}
+    <h3>Scenarios</h3>
     <div class="scenario-grid">
   `;
 
