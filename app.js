@@ -253,52 +253,6 @@ function pctCell(value, total) {
   }
 }
 
-// ===== Revenue allocation: single panoramic bar showing where each € goes =====
-function renderRevenueAllocation(opp, r) {
-  const rev = r.pnl.revenue;
-  const segments = [
-    { name: "Land",              value: r.acquisition.total,     color: "#60a5fa" },
-    { name: "Setup",             value: r.setupCost,             color: "#93c5fd" },
-    { name: "Hard costs",        value: r.hard.construction,     color: "#f87171" },
-    { name: "Contingencies",     value: r.hard.contingencies,    color: "#fca5a5" },
-    { name: "Soft costs",        value: r.soft.total,            color: "#fb923c" },
-    { name: "Commercialization", value: r.pnl.commercialization, color: "#c084fc" },
-    { name: "Financing",         value: r.pnl.financing,         color: "#a78bfa" },
-    { name: "Taxes (IS)",        value: r.pnl.tax,               color: "#94a3b8" },
-    { name: "Profit (EAT)",      value: r.pnl.eat,               color: "#10b981" },
-  ];
-
-  const bar = segments.map(s => `
-    <div class="alloc-seg"
-         style="width:${(s.value / rev) * 100}%; background:${s.color}"
-         title="${s.name}: ${fmtEUR(s.value)} (${fmtPct(s.value / rev)})"></div>
-  `).join("");
-
-  const legend = segments.map(s => `
-    <div class="alloc-legend-item">
-      <span class="alloc-dot" style="background:${s.color}"></span>
-      <div class="alloc-legend-content">
-        <div class="alloc-name">${s.name}</div>
-        <div class="alloc-values">
-          <span class="alloc-pct">${fmtPct(s.value / rev)}</span>
-          <span class="alloc-eur">${fmtEUR(s.value)}</span>
-        </div>
-      </div>
-    </div>
-  `).join("");
-
-  return `
-    <div class="allocation-section">
-      <div class="alloc-head">
-        <h3>Where does every € of revenue go?</h3>
-        <div class="alloc-revenue">Revenue <strong>${fmtEUR(rev)}</strong></div>
-      </div>
-      <div class="alloc-bar">${bar}</div>
-      <div class="alloc-legend">${legend}</div>
-    </div>
-  `;
-}
-
 // ===== Tab: Summary =====
 function renderSummary(opp) {
   const scenarios = ["worst", "base", "best"];
@@ -515,8 +469,6 @@ function renderPnL(opp) {
   const pctStyleLabel = { bars: "Bars", fill: "Fill", dots: "Dots", text: "Text" };
   const html = `
     <h2>P&L — ${opp.name} ${statusBadgeHTML(opp)} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
-
-    ${renderRevenueAllocation(opp, r)}
 
     <div class="pnl-toolbar">
       <div class="pct-style-toggle">
