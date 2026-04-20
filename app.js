@@ -151,8 +151,8 @@ function renderSummary(opp) {
   let html = `
     <div class="summary-head">
       <div>
-        <h2>${opp.name}</h2>
-        <div class="muted">${opp.address}</div>
+        <h2>${opp.name} ${statusBadgeHTML(opp)}</h2>
+        <div class="muted">${opp.address || "Address TBD"}</div>
       </div>
     </div>
     <div class="scenario-grid">
@@ -160,11 +160,13 @@ function renderSummary(opp) {
 
   for (const scen of scenarios) {
     const r = results[scen];
+    const note = opp.scenarios[scen].note;
     html += `
       <div class="scenario-card scen-${scen}">
         <div class="scen-head">
           <div class="scen-name">${scenLabel[scen]} case</div>
           <div class="scen-sub">${fmtEUR(opp.scenarios[scen].salePricePerSqm)}/sqm sale · ${fmtEUR(opp.scenarios[scen].pemPerSqm)}/sqm PEM</div>
+          ${note ? `<div class="scen-note">${note}</div>` : ""}
         </div>
         <div class="scen-body">
     `;
@@ -188,8 +190,8 @@ function renderHypothesis(opp) {
   const edificable = opp.plotSize * opp.edificabilityRatio;
 
   let html = `
-    <h2>Hypothesis — ${opp.name}</h2>
-    <p class="muted">Inputs are edited in <code>data/opportunities.js</code> via Claude Code. This view is read-only.</p>
+    <h2>Hypothesis — ${opp.name} ${statusBadgeHTML(opp)}</h2>
+    <p class="muted">Inputs are edited in <code>data/${state.oppKey}.js</code> via Claude Code. This view is read-only.</p>
 
     <div class="two-col">
       <div class="col">
@@ -290,7 +292,7 @@ function renderPnL(opp) {
 
   let html = `
     <div class="pnl-head">
-      <h2>P&L — ${opp.name}</h2>
+      <h2>P&L — ${opp.name} ${statusBadgeHTML(opp)}</h2>
       <div class="scenario-picker">
         <label for="scenario-select">Scenario:</label>
         <select id="scenario-select">
@@ -366,7 +368,7 @@ function renderInvestors(opp) {
 
   let html = `
     <div class="pnl-head">
-      <h2>Investors — ${opp.name}</h2>
+      <h2>Investors — ${opp.name} ${statusBadgeHTML(opp)}</h2>
       <div class="scenario-picker">
         <label for="scenario-select-inv">Scenario:</label>
         <select id="scenario-select-inv">
@@ -436,6 +438,11 @@ function renderTab() {
   const main = document.getElementById("main");
   if (!opp) { main.innerHTML = "<p>No opportunity selected.</p>"; return; }
 
+  if (opp.placeholder) {
+    main.innerHTML = renderPlaceholder(opp);
+    return;
+  }
+
   switch (state.tab) {
     case "summary":     main.innerHTML = renderSummary(opp); break;
     case "hypothesis":  main.innerHTML = renderHypothesis(opp); break;
@@ -453,9 +460,37 @@ function renderTab() {
   }
 }
 
+// ===== Status badge =====
+function statusBadgeHTML(opp) {
+  if (!opp.status) return "";
+  const slug = opp.status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return `<span class="status-badge status-${slug}">${opp.status}</span>`;
+}
+
+// ===== Placeholder renderer =====
+function renderPlaceholder(opp) {
+  return `
+    <div class="summary-head">
+      <div>
+        <h2>${opp.name} ${statusBadgeHTML(opp)}</h2>
+        <div class="muted">${opp.address || "Address TBD"}</div>
+      </div>
+    </div>
+    <div class="placeholder-panel">
+      <div class="placeholder-icon">📋</div>
+      <h3>No data yet</h3>
+      <p>This opportunity is at the <strong>"${opp.status}"</strong> stage. Numbers will be filled in as the project progresses.</p>
+      <p class="muted">To add data, edit <code>data/${state.oppKey}.js</code> — remove the <code>placeholder: true</code> flag and add the same fields as <code>el-cantal.js</code>.</p>
+    </div>
+  `;
+}
+
 // ===== Bootstrap =====
 function init() {
-  const oppKeys = Object.keys(window.OPPORTUNITIES);
+  // Use explicit order if available, else fall back to insertion order.
+  const oppKeys = window.OPPORTUNITY_ORDER && window.OPPORTUNITY_ORDER.length
+    ? window.OPPORTUNITY_ORDER
+    : Object.keys(window.OPPORTUNITIES);
   state.oppKey = oppKeys[0];
 
   // Opportunity dropdown
