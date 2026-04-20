@@ -236,7 +236,7 @@ function renderSummary(opp) {
   const kpis = [
     { label: "Revenue",                                              get: r => fmtEUR(r.pnl.revenue) },
     { label: "Costs",                                                get: r => fmtEUR(r.pnl.totalCosts) },
-    { label: "Benefits (EAT)",                                       get: r => fmtEUR(r.pnl.eat), highlight: true },
+    { label: "Benefits",                                             get: r => fmtEUR(r.pnl.eat), highlight: true },
     { label: "Profit margin",                                        get: r => fmtPct(r.returns.rentabilidad) },
     { label: r => `Net IRR (${r.returns.durationMonths} mo)`,        get: r => fmtPct(r.returns.irrBase), highlight: true },
     { label: r => `Net IRR (${r.returns.durationMonths + 12} mo, 12-mo delay)`, get: r => fmtPct(r.returns.irrDelayed) },
@@ -320,9 +320,16 @@ function renderHypothesis(opp) {
         <table class="kv">
           <tbody>
             ${hypRow("Land price", fmtEUR(A.landPrice))}
-            ${hypRow(`${A.landTaxRegime} (${fmtPct(A.landTaxRate, 0)} of land price)`, fmtEUR(A.landPrice * A.landTaxRate))}
-            ${hypRow(`Notary (${fmtPct(A.notaryRate, 0)} of land price)`, fmtEUR(A.landPrice * A.notaryRate))}
-            ${hypRow(`Sales commission (${fmtPct(A.salesCommissionRate, 0)} of land price)`, fmtEUR(A.landPrice * A.salesCommissionRate))}
+            ${hypRow(`${A.landTaxRegime} (% of land price)`,      fmtPct(A.landTaxRate, 0))}
+            ${hypRow("Notary (% of land price)",                  fmtPct(A.notaryRate, 0))}
+            ${hypRow("Sales commission (% of land price)",        fmtPct(A.salesCommissionRate, 0))}
+          </tbody>
+        </table>
+
+        <h3>Setup</h3>
+        <table class="kv">
+          <tbody>
+            ${hypRow("Setup costs (% of acquisition total)",      fmtPct(opp.setupRate, 0))}
           </tbody>
         </table>
 
@@ -335,39 +342,32 @@ function renderHypothesis(opp) {
       </div>
 
       <div class="col">
-        <h3>Setup</h3>
-        <table class="kv">
-          <tbody>
-            ${hypRow(`Setup costs (${fmtPct(opp.setupRate, 0)} of acquisition)`, "—")}
-          </tbody>
-        </table>
-
         <h3>Hard costs</h3>
         <table class="kv">
           <tbody>
-            ${hypRow("PEM costs (€/sqm, per scenario)", "see below")}
-            ${hypRow(`PEC costs (${fmtPct(H.pecRate, 0)} of PEM costs)`, "—")}
-            ${hypRow(`Other costs — insurance, taxes (${fmtPct(H.otherCostsRate, 0)} of PEM costs)`, "—")}
-            ${hypRow(`Contingencies (${fmtPct(H.contingenciesRate, 0)} of construction)`, "—")}
+            ${hypRow("PEM costs",                                 "per scenario")}
+            ${hypRow("PEC costs (% of PEM costs)",                fmtPct(H.pecRate, 0))}
+            ${hypRow("Other costs — insurance, taxes (% of PEM)", fmtPct(H.otherCostsRate, 0))}
+            ${hypRow("Contingencies (% of construction)",         fmtPct(H.contingenciesRate, 0))}
           </tbody>
         </table>
 
         <h3>Soft costs</h3>
         <table class="kv">
           <tbody>
-            ${hypRow(`Architecture (${fmtPct(S.architectureRate, 0)} of construction)`, "—")}
-            ${hypRow(`Aparejador (${fmtPct(S.aparejadorRate, 1)} of construction)`, "—")}
-            ${hypRow(`Licence & others (${fmtPct(S.licenceRate, 0)} of construction)`, "—")}
-            ${hypRow(`Project management (${fmtPct(S.projectManagementRate, 0)} of construction)`, "—")}
+            ${hypRow("Architecture (% of construction)",          fmtPct(S.architectureRate, 0))}
+            ${hypRow("Aparejador (% of construction)",            fmtPct(S.aparejadorRate, 1))}
+            ${hypRow("Licence & others (% of construction)",      fmtPct(S.licenceRate, 0))}
+            ${hypRow("Project management (% of construction)",    fmtPct(S.projectManagementRate, 0))}
           </tbody>
         </table>
 
         <h3>P&L rates</h3>
         <table class="kv">
           <tbody>
-            ${hypRow(`Commercialization (${fmtPct(opp.commercializationRate, 0)} of revenue)`, "—")}
-            ${hypRow(`Financing (${fmtPct(opp.financingRate, 0)} of total costs)`, "—")}
-            ${hypRow(`IS / tax rate`, fmtPct(opp.taxRate, 0))}
+            ${hypRow("Commercialization (% of revenue)",          fmtPct(opp.commercializationRate, 0))}
+            ${hypRow("Financing (% of total costs)",              fmtPct(opp.financingRate, 0))}
+            ${hypRow("IS / tax rate",                             fmtPct(opp.taxRate, 0))}
           </tbody>
         </table>
       </div>
