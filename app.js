@@ -112,6 +112,30 @@ const state = {
   expanded: { land: false, hard: false, soft: false },
 };
 
+// ===== URL hash sync (so refresh + share keep the view) =====
+// Hash format: #opp=<key>&tab=<tab>&scenario=<scenario>
+function readHash() {
+  const hash = location.hash.replace(/^#/, "");
+  const params = new URLSearchParams(hash);
+  return {
+    opp: params.get("opp"),
+    tab: params.get("tab"),
+    scenario: params.get("scenario"),
+  };
+}
+
+function writeHash() {
+  const params = new URLSearchParams();
+  if (state.oppKey)   params.set("opp", state.oppKey);
+  if (state.tab)      params.set("tab", state.tab);
+  if (state.scenario) params.set("scenario", state.scenario);
+  const newHash = "#" + params.toString();
+  // Use replaceState so we don't clutter browser history on every click.
+  if (location.hash !== newHash) {
+    history.replaceState(null, "", newHash);
+  }
+}
+
 // ===== Status badge =====
 function statusBadgeHTML(opp) {
   if (!opp.status) return "";
@@ -602,6 +626,11 @@ function renderInvestors(opp) {
 
 // ===== Tab dispatch =====
 function renderTab() {
+  writeHash();
+  // Sync the active tab button class (in case tab changed via hash/back)
+  document.querySelectorAll(".tab-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.tab === state.tab));
+
   const opp = window.OPPORTUNITIES[state.oppKey];
   const main = document.getElementById("main");
   if (!opp) { main.innerHTML = "<p>No opportunity selected.</p>"; return; }
@@ -642,25 +671,41 @@ function init() {
   const oppKeys = window.OPPORTUNITY_ORDER && window.OPPORTUNITY_ORDER.length
     ? window.OPPORTUNITY_ORDER
     : Object.keys(window.OPPORTUNITIES);
-  state.oppKey = oppKeys[0];
 
+  // Initialize from URL hash if present; otherwise defaults.
+  const hashed = readHash();
+  state.oppKey   = (hashed.opp && window.OPPORTUNITIES[hashed.opp]) ? hashed.opp : oppKeys[0];
+  state.tab      = ["summary", "hypothesis", "pnl", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
+  state.scenario = ["worst", "base", "best"].includes(hashed.scenario) ? hashed.scenario : "base";
+
+  // Opportunity dropdown
   const select = document.getElementById("opportunity-select");
   select.innerHTML = oppKeys.map(k =>
-    `<option value="${k}">${window.OPPORTUNITIES[k].name}</option>`
+    `<option value="${k}" ${k === state.oppKey ? "selected" : ""}>${window.OPPORTUNITIES[k].name}</option>`
   ).join("");
   select.addEventListener("change", (e) => {
     state.oppKey = e.target.value;
-    // Reset expanded state when switching opportunities
     state.expanded = { land: false, hard: false, soft: false };
     renderTab();
   });
 
+  // Tab buttons
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       state.tab = btn.dataset.tab;
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b === btn));
       renderTab();
     });
+  });
+
+  // React to back/forward navigation (hash changes externally)
+  window.addEventListener("hashchange", () => {
+    const h = readHash();
+    if (h.opp && window.OPPORTUNITIES[h.opp])          state.oppKey   = h.opp;
+    if (["summary","hypothesis","pnl","investors"].includes(h.tab))  state.tab = h.tab;
+    if (["worst","base","best"].includes(h.scenario))  state.scenario = h.scenario;
+    // Keep the dropdown in sync
+    if (select.value !== state.oppKey) select.value = state.oppKey;
+    renderTab();
   });
 
   renderTab();
