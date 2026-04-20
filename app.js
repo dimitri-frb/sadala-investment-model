@@ -3,15 +3,11 @@
 // ===== Formatting =====
 const fmtEUR = (n) => (n == null || isNaN(n)) ? "—" :
   new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
-const fmtEUR2 = (n) => (n == null || isNaN(n)) ? "—" :
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
 const fmtPct = (n, d = 1) => (n == null || isNaN(n)) ? "—" : `${(n * 100).toFixed(d)}%`;
-const fmtNum = (n, d = 2) => (n == null || isNaN(n)) ? "—" : n.toLocaleString("en-US", { maximumFractionDigits: d });
+const fmtNum = (n, d = 2) => (n == null || isNaN(n)) ? "—" : n.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
 
 // ===== IRR =====
-// Closed-form annualized IRR for a single lump-sum return after `months` months:
-//   (1 + r)^(months/12) = equityReturn / equityInvested
-// => r = (multiple)^(12/months) - 1
+// Closed-form annualized IRR for a single lump-sum return after `months` months.
 function irrLumpSum(equityInvested, equityReturn, months) {
   if (!equityInvested || equityInvested <= 0 || !months || months <= 0) return null;
   const multiple = equityReturn / equityInvested;
@@ -22,51 +18,44 @@ function irrLumpSum(equityInvested, equityReturn, months) {
 // ===== Core engine =====
 function compute(opp, scenarioKey) {
   const s = opp.scenarios[scenarioKey];
-  const builtTotal = opp.builtAbove + opp.builtBelow + opp.terraces;
-  const edificableTotal = opp.plotSize * opp.edificabilityRatio;
+  const P = opp.property;
+  const builtTotal = P.sobreRasante + P.bajoRasante + P.terrazas;
+  const edificableTotal = P.parcela * P.ratioEdificabilidad;
 
-  // Sale stages
-  const priceIV = s.salePricePerSqm;
-  const priceIII = priceIV + opp.saleStageDeltas.III;
-  const priceII = priceIV + opp.saleStageDeltas.II;
-  const priceI = priceIV + opp.saleStageDeltas.I;
+  // --- Revenue (single line, no stages) ---
+  const revenue = s.salePricePerSqm * builtTotal;
 
-  const revenueIV = priceIV * builtTotal;
-  const revenueIII = priceIII * builtTotal;
-  const revenueII = priceII * builtTotal;
-  const revenueI = priceI * builtTotal;
+  // --- Acquisition ---
+  const A = opp.acquisition;
+  const landTax = A.landPrice * A.landTaxRate;
+  const notary = A.landPrice * A.notaryRate;
+  const landSalesComm = A.landPrice * A.salesCommissionRate;
+  const acquisitionTotal = A.landPrice + landTax + notary + landSalesComm;
 
-  // Land
-  const itp = opp.landPrice * opp.itpRate;
-  const landSalesComm = opp.landPrice * opp.landSalesCommissionRate;
-  const landTotal = opp.landPrice + itp + opp.notary + landSalesComm;
-  const setupCost = landTotal * opp.setupRate;
+  // --- Setup ---
+  const setupCost = acquisitionTotal * opp.setupRate;
 
-  // Construction
+  // --- Hard costs (construction) ---
+  const H = opp.hardCosts;
   const pem = s.pemPerSqm * builtTotal;
-  const pec = pem * opp.pecRate;
-  const otherCosts = (pem + pec) * opp.otherCostsRate;
+  const pec = pem * H.pecRate;
+  const otherCosts = pem * H.otherCostsRate;  // now % of PEM only
   const construction = pem + pec + otherCosts;
-  const contingencies = construction * opp.contingenciesRate;
+  const contingencies = construction * H.contingenciesRate;
 
-  // Soft
-  const architecture = construction * opp.architectureRate;
-  const aparejador = construction * opp.aparejadorRate;
-  const licence = construction * opp.licenceRate;
-  const softCost = architecture + aparejador + licence + opp.projectManagementCost;
+  // --- Soft costs (all % of construction) ---
+  const S = opp.softCosts;
+  const architecture = construction * S.architectureRate;
+  const aparejador = construction * S.aparejadorRate;
+  const licence = construction * S.licenceRate;
+  const projectManagement = construction * S.projectManagementRate;
+  const softCost = architecture + aparejador + licence + projectManagement;
 
-  const totalCosts = landTotal + setupCost + opp.urbanizationCost + construction + contingencies + softCost;
+  // --- Totals ---
+  const totalCosts = acquisitionTotal + setupCost + opp.urbanizationCost
+                   + construction + contingencies + softCost;
 
-  // Per-stage gross profit (vs total costs, before commercialization/financing/tax)
-  const gross = {
-    I:   { revenue: revenueI,   profit: revenueI   - totalCosts, margin: (revenueI   - totalCosts) / revenueI   },
-    II:  { revenue: revenueII,  profit: revenueII  - totalCosts, margin: (revenueII  - totalCosts) / revenueII  },
-    III: { revenue: revenueIII, profit: revenueIII - totalCosts, margin: (revenueIII - totalCosts) / revenueIII },
-    IV:  { revenue: revenueIV,  profit: revenueIV  - totalCosts, margin: (revenueIV  - totalCosts) / revenueIV  },
-  };
-
-  // P&L based on stage IV
-  const revenue = revenueIV;
+  // --- P&L waterfall ---
   const ebitda = revenue - totalCosts;
   const commercialization = revenue * opp.commercializationRate;
   const ebit = ebitda - commercialization;
@@ -75,11 +64,12 @@ function compute(opp, scenarioKey) {
   const tax = ebt * opp.taxRate;
   const eat = ebt - tax;
 
-  // Equity & returns
-  const equityInvested = landTotal + setupCost + opp.urbanizationCost + contingencies + softCost;
+  // --- Equity & returns ---
+  const equityInvested = acquisitionTotal + setupCost + opp.urbanizationCost
+                       + contingencies + softCost;
   const netProfit = eat;
   const roe = netProfit / equityInvested;
-  const rentabilidad = netProfit / totalCosts;  // margin post taxes on cost base
+  const rentabilidad = netProfit / totalCosts;
   const equityReturn = equityInvested + netProfit;
 
   const durationMonths = opp.projectDurationMonths;
@@ -89,22 +79,23 @@ function compute(opp, scenarioKey) {
 
   return {
     builtTotal, edificableTotal,
-    prices: { I: priceI, II: priceII, III: priceIII, IV: priceIV },
-    revenues: { I: revenueI, II: revenueII, III: revenueIII, IV: revenueIV },
-    costs: {
-      landPrice: opp.landPrice, itp, notary: opp.notary, landSalesComm,
-      landTotal, setupCost, urbanization: opp.urbanizationCost,
+    revenue, pricePerSqm: s.salePricePerSqm,
+    acquisition: {
+      landPrice: A.landPrice, landTax, notary, landSalesComm, total: acquisitionTotal,
+      landTaxRegime: A.landTaxRegime, landTaxRate: A.landTaxRate,
+      notaryRate: A.notaryRate, salesCommissionRate: A.salesCommissionRate,
+    },
+    setupCost,
+    urbanization: opp.urbanizationCost,
+    hard: {
       pem, pec, otherCosts, construction, contingencies,
-      architecture, aparejador, licence, projectManagement: opp.projectManagementCost,
-      softCost, totalCosts,
+      pemPerSqm: s.pemPerSqm,
     },
-    gross,
-    pnl: {
-      revenue, totalCosts, ebitda,
-      commercialization, ebit,
-      financing, ebt,
-      tax, eat,
+    soft: {
+      architecture, aparejador, licence, projectManagement, total: softCost,
     },
+    totalCosts,
+    pnl: { revenue, totalCosts, ebitda, commercialization, ebit, financing, ebt, tax, eat },
     returns: {
       equityInvested, netProfit, roe, rentabilidad,
       equityReturn, durationMonths,
@@ -116,37 +107,62 @@ function compute(opp, scenarioKey) {
 // ===== State =====
 const state = {
   oppKey: null,
-  scenario: "base",   // for P&L tab
+  scenario: "base",
   tab: "summary",
+  expanded: { land: false, hard: false, soft: false },
 };
 
-// ===== Rendering helpers =====
-function row(label, value, opts = {}) {
-  const cls = opts.className || "";
-  const subClass = opts.subLabel ? " sub" : "";
-  return `<tr class="${cls}${subClass}"><td>${label}</td><td class="num">${value}</td></tr>`;
+// ===== Status badge =====
+function statusBadgeHTML(opp) {
+  if (!opp.status) return "";
+  const slug = opp.status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return `<span class="status-badge status-${slug}">${opp.status}</span>`;
 }
 
-function sectionHeader(label) {
-  return `<tr class="section"><td colspan="99">${label}</td></tr>`;
+// ===== Placeholder renderer =====
+function renderPlaceholder(opp) {
+  return `
+    <div class="summary-head">
+      <div>
+        <h2>${opp.name} ${statusBadgeHTML(opp)}</h2>
+        <div class="muted">${opp.address || "Address TBD"}</div>
+      </div>
+    </div>
+    <div class="placeholder-panel">
+      <div class="placeholder-icon">📋</div>
+      <h3>No data yet</h3>
+      <p>This opportunity is at the <strong>"${opp.status}"</strong> stage. Numbers will be filled in as the project progresses.</p>
+      <p class="muted">To add data, edit <code>data/${state.oppKey}.js</code> — remove the <code>placeholder: true</code> flag and add the same fields as <code>el-cantal.js</code>.</p>
+    </div>
+  `;
+}
+
+// ===== Percentage bar component =====
+function pctBar(value, total, { color = "neutral" } = {}) {
+  const pct = total ? value / total : 0;
+  const width = Math.min(Math.abs(pct) * 100, 100);
+  return `
+    <div class="pct-cell">
+      <div class="pct-bar"><div class="pct-fill pct-${color}" style="width:${width}%"></div></div>
+      <span class="pct-text">${fmtPct(pct)}</span>
+    </div>`;
 }
 
 // ===== Tab: Summary =====
 function renderSummary(opp) {
   const scenarios = ["worst", "base", "best"];
   const results = Object.fromEntries(scenarios.map(s => [s, compute(opp, s)]));
+  const scenLabel = { worst: "Worst", base: "Base", best: "Best" };
 
   const kpis = [
-    { key: "revenue",        label: "Revenue",                         get: r => fmtEUR(r.pnl.revenue) },
-    { key: "costs",          label: "Costs",                           get: r => fmtEUR(r.pnl.totalCosts) },
-    { key: "benefits",       label: "Benefits (EAT)",                  get: r => fmtEUR(r.pnl.eat), highlight: true },
-    { key: "rentabilidad",   label: "Rentabilidad %",                  get: r => fmtPct(r.returns.rentabilidad) },
-    { key: "irrBase",        label: r => `Net IRR (${r.returns.durationMonths} mo)`, get: r => fmtPct(r.returns.irrBase), highlight: true },
-    { key: "irrDelayed",     label: r => `Net IRR (${r.returns.durationMonths + 12} mo, 12-mo delay)`, get: r => fmtPct(r.returns.irrDelayed) },
-    { key: "roe",            label: "ROE",                             get: r => fmtPct(r.returns.roe), highlight: true },
+    { label: "Revenue",                                              get: r => fmtEUR(r.pnl.revenue) },
+    { label: "Costs",                                                get: r => fmtEUR(r.pnl.totalCosts) },
+    { label: "Benefits (EAT)",                                       get: r => fmtEUR(r.pnl.eat), highlight: true },
+    { label: "Rentabilidad %",                                       get: r => fmtPct(r.returns.rentabilidad) },
+    { label: r => `Net IRR (${r.returns.durationMonths} mo)`,        get: r => fmtPct(r.returns.irrBase), highlight: true },
+    { label: r => `Net IRR (${r.returns.durationMonths + 12} mo, 12-mo delay)`, get: r => fmtPct(r.returns.irrDelayed) },
+    { label: "ROE",                                                  get: r => fmtPct(r.returns.roe), highlight: true },
   ];
-
-  const scenLabel = { worst: "Worst", base: "Base", best: "Best" };
 
   let html = `
     <div class="summary-head">
@@ -185,9 +201,18 @@ function renderSummary(opp) {
 }
 
 // ===== Tab: Hypothesis =====
+function hypRow(label, value, opts = {}) {
+  const cls = opts.sub ? "sub" : opts.derived ? "derived" : "";
+  return `<tr class="${cls}"><td>${label}</td><td class="num">${value}</td></tr>`;
+}
+
 function renderHypothesis(opp) {
-  const builtTotal = opp.builtAbove + opp.builtBelow + opp.terraces;
-  const edificable = opp.plotSize * opp.edificabilityRatio;
+  const P = opp.property;
+  const builtTotal = P.sobreRasante + P.bajoRasante + P.terrazas;
+  const edificable = P.parcela * P.ratioEdificabilidad;
+  const A = opp.acquisition;
+  const H = opp.hardCosts;
+  const S = opp.softCosts;
 
   let html = `
     <h2>Hypothesis — ${opp.name} ${statusBadgeHTML(opp)}</h2>
@@ -196,90 +221,109 @@ function renderHypothesis(opp) {
     <div class="two-col">
       <div class="col">
         <h3>Property</h3>
-        <table class="kv">
-          ${row("Typology", opp.typology)}
-          ${row("Plot size", `${fmtNum(opp.plotSize)} m²`)}
-          ${row("Edificability ratio", fmtPct(opp.edificabilityRatio, 0))}
-          ${row("Edificable total", `${fmtNum(edificable)} m²`, { className: "derived" })}
-          ${row("Built above rasante", `${fmtNum(opp.builtAbove)} m²`)}
-          ${row("Built below rasante", `${fmtNum(opp.builtBelow)} m²`)}
-          ${row("Terraces", `${fmtNum(opp.terraces)} m²`)}
-          ${row("Built total", `${fmtNum(builtTotal)} m²`, { className: "derived" })}
-          ${row("Exterior garden", `${fmtNum(opp.exteriorGarden)} m²`)}
+        <table class="kv property-table">
+          <tbody>
+            ${hypRow("Tipologia edificacion", P.tipologia)}
+            ${hypRow("Superficie parcela adoptada", `${fmtNum(P.parcela)} m²`)}
+            ${hypRow("Ratio edificabilidad", fmtNum(P.ratioEdificabilidad))}
+            ${hypRow("Superficie edificabilidad total", `${fmtNum(edificable)} m²`, { derived: true })}
+            ${hypRow("Superficie construida total", `${fmtNum(builtTotal)} m²`, { derived: true })}
+            ${hypRow("Construida sobre rasante", `${fmtNum(P.sobreRasante)} m²`, { sub: true })}
+            ${hypRow("Construida bajo rasante", `${fmtNum(P.bajoRasante)} m²`, { sub: true })}
+            ${hypRow("Terrazas", `${fmtNum(P.terrazas)} m²`, { sub: true })}
+            ${hypRow("Exterior jardines y ZZCC urbanizacion", `${fmtNum(P.exteriorJardines)} m²`, { sub: true })}
+          </tbody>
         </table>
 
-        <h3>Land acquisition</h3>
+        <h3>Acquisition</h3>
         <table class="kv">
-          ${row("Land asking price", fmtEUR(opp.landPrice))}
-          ${row("ITP rate", fmtPct(opp.itpRate, 0))}
-          ${row("Notary & registro", fmtEUR(opp.notary))}
-          ${row("Sales commission (land)", fmtPct(opp.landSalesCommissionRate, 1))}
-        </table>
-
-        <h3>P&L rates</h3>
-        <table class="kv">
-          ${row("Setup costs (% of land)", fmtPct(opp.setupRate, 0))}
-          ${row("Commercialization (% of revenue)", fmtPct(opp.commercializationRate, 0))}
-          ${row("Financing (% of total costs)", fmtPct(opp.financingRate, 0))}
-          ${row("IS / tax rate", fmtPct(opp.taxRate, 0))}
+          <tbody>
+            ${hypRow("Land price", fmtEUR(A.landPrice))}
+            ${hypRow(`${A.landTaxRegime} (${fmtPct(A.landTaxRate, 0)} of land price)`, fmtEUR(A.landPrice * A.landTaxRate))}
+            ${hypRow(`Notary (${fmtPct(A.notaryRate, 0)} of land price)`, fmtEUR(A.landPrice * A.notaryRate))}
+            ${hypRow(`Sales commission (${fmtPct(A.salesCommissionRate, 0)} of land price)`, fmtEUR(A.landPrice * A.salesCommissionRate))}
+          </tbody>
         </table>
 
         <h3>Timing</h3>
         <table class="kv">
-          ${row("Project duration", `${opp.projectDurationMonths} months`)}
-          ${row("12-month delay scenario", `${opp.projectDurationMonths + 12} months`, { className: "derived" })}
+          <tbody>
+            ${hypRow("Project duration", `${opp.projectDurationMonths} months`)}
+          </tbody>
         </table>
       </div>
 
       <div class="col">
-        <h3>Construction rates</h3>
+        <h3>Setup</h3>
         <table class="kv">
-          ${row("PEC (% of PEM)", fmtPct(opp.pecRate, 0))}
-          ${row("Other costs (% of PEM+PEC)", fmtPct(opp.otherCostsRate, 0))}
-          ${row("Contingencies (% of construction)", fmtPct(opp.contingenciesRate, 0))}
+          <tbody>
+            ${hypRow(`Setup costs (${fmtPct(opp.setupRate, 0)} of acquisition)`, "—")}
+          </tbody>
+        </table>
+
+        <h3>Hard costs</h3>
+        <table class="kv">
+          <tbody>
+            ${hypRow("PEM costs (€/sqm, per scenario)", "see below")}
+            ${hypRow(`PEC costs (${fmtPct(H.pecRate, 0)} of PEM costs)`, "—")}
+            ${hypRow(`Other costs — insurance, taxes (${fmtPct(H.otherCostsRate, 0)} of PEM costs)`, "—")}
+            ${hypRow(`Contingencies (${fmtPct(H.contingenciesRate, 0)} of construction)`, "—")}
+          </tbody>
         </table>
 
         <h3>Soft costs</h3>
         <table class="kv">
-          ${row("Architecture (% of construction)", fmtPct(opp.architectureRate, 0))}
-          ${row("Aparejador (% of construction)", fmtPct(opp.aparejadorRate, 1))}
-          ${row("Licence & others (% of construction)", fmtPct(opp.licenceRate, 0))}
-          ${row("Project management (absolute)", fmtEUR(opp.projectManagementCost))}
-        </table>
-
-        <h3>Scenario KPIs</h3>
-        <table class="kv">
-          <thead>
-            <tr><th>Scenario</th><th class="num">Sale €/sqm</th><th class="num">PEM €/sqm</th></tr>
-          </thead>
           <tbody>
-            ${["worst", "base", "best"].map(s => `
-              <tr>
-                <td class="scen-${s}">${s[0].toUpperCase()}${s.slice(1)} case</td>
-                <td class="num">${fmtEUR(opp.scenarios[s].salePricePerSqm)}</td>
-                <td class="num">${fmtEUR(opp.scenarios[s].pemPerSqm)}</td>
-              </tr>
-            `).join("")}
+            ${hypRow(`Architecture (${fmtPct(S.architectureRate, 0)} of construction)`, "—")}
+            ${hypRow(`Aparejador (${fmtPct(S.aparejadorRate, 1)} of construction)`, "—")}
+            ${hypRow(`Licence & others (${fmtPct(S.licenceRate, 0)} of construction)`, "—")}
+            ${hypRow(`Project management (${fmtPct(S.projectManagementRate, 0)} of construction)`, "—")}
           </tbody>
         </table>
 
-        <h3>Cap table (inputs)</h3>
+        <h3>P&L rates</h3>
         <table class="kv">
-          <thead>
-            <tr><th>Investor</th><th class="num">Equity</th><th class="num">Profit share</th></tr>
-          </thead>
           <tbody>
-            ${opp.investors.map(i => `
-              <tr>
-                <td>${i.name}</td>
-                <td class="num">${i.equity == null ? "<span class='muted'>derived</span>" : fmtEUR(i.equity)}</td>
-                <td class="num">${fmtPct(i.profitShare, 0)}</td>
-              </tr>
-            `).join("")}
+            ${hypRow(`Commercialization (${fmtPct(opp.commercializationRate, 0)} of revenue)`, "—")}
+            ${hypRow(`Financing (${fmtPct(opp.financingRate, 0)} of total costs)`, "—")}
+            ${hypRow(`IS / tax rate`, fmtPct(opp.taxRate, 0))}
           </tbody>
         </table>
       </div>
     </div>
+
+    <h3>Scenario assumptions</h3>
+    <table class="kv">
+      <thead>
+        <tr><th>Scenario</th><th class="num">Sale €/sqm</th><th class="num">PEM €/sqm</th><th>Note</th></tr>
+      </thead>
+      <tbody>
+        ${["worst", "base", "best"].map(s => `
+          <tr>
+            <td class="scen-${s}">${s[0].toUpperCase()}${s.slice(1)} case</td>
+            <td class="num">${fmtEUR(opp.scenarios[s].salePricePerSqm)}</td>
+            <td class="num">${fmtEUR(opp.scenarios[s].pemPerSqm)}</td>
+            <td class="muted">${opp.scenarios[s].note || "—"}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+
+    <h3>Cap table</h3>
+    <table class="kv">
+      <thead>
+        <tr><th>Investor</th><th class="num">Equity</th><th class="num">Profit share</th></tr>
+      </thead>
+      <tbody>
+        ${opp.investors.map(i => `
+          <tr>
+            <td>${i.name}</td>
+            <td class="num">${i.equity == null ? "<span class='muted'>derived</span>" : fmtEUR(i.equity)}</td>
+            <td class="num">${fmtPct(i.profitShare, 1)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
   `;
   return html;
 }
@@ -288,9 +332,49 @@ function renderHypothesis(opp) {
 function renderPnL(opp) {
   const r = compute(opp, state.scenario);
   const rev = r.pnl.revenue;
-  const pct = (n) => fmtPct(n / rev);
+  const A = r.acquisition;
 
-  let html = `
+  // Expandable cost detail rows
+  const landDetails = [
+    { label: "Land price",                                                              value: A.landPrice },
+    { label: `${A.landTaxRegime} (${fmtPct(A.landTaxRate, 0)})`,                        value: A.landTax },
+    { label: `Notary (${fmtPct(A.notaryRate, 0)})`,                                     value: A.notary },
+    { label: `Sales commission (${fmtPct(A.salesCommissionRate, 0)})`,                  value: A.landSalesComm },
+  ];
+  const hardDetails = [
+    { label: `PEM (${fmtEUR(r.hard.pemPerSqm)}/sqm × ${fmtNum(r.builtTotal, 1)} sqm)`, value: r.hard.pem },
+    { label: `PEC (${fmtPct(opp.hardCosts.pecRate, 0)} of PEM)`,                        value: r.hard.pec },
+    { label: `Other costs — insurance, taxes (${fmtPct(opp.hardCosts.otherCostsRate, 0)} of PEM)`, value: r.hard.otherCosts },
+  ];
+  const softDetails = [
+    { label: `Architecture (${fmtPct(opp.softCosts.architectureRate, 0)} of construction)`,          value: r.soft.architecture },
+    { label: `Aparejador (${fmtPct(opp.softCosts.aparejadorRate, 1)} of construction)`,              value: r.soft.aparejador },
+    { label: `Licence & others (${fmtPct(opp.softCosts.licenceRate, 0)} of construction)`,           value: r.soft.licence },
+    { label: `Project management (${fmtPct(opp.softCosts.projectManagementRate, 0)} of construction)`, value: r.soft.projectManagement },
+  ];
+
+  function expandableRow(key, label, value) {
+    const open = state.expanded[key];
+    const triangle = open ? "▾" : "▸";
+    return `
+      <tr class="cost-row expandable" data-toggle="${key}">
+        <td><span class="triangle">${triangle}</span> ${label}</td>
+        <td class="num">${fmtEUR(value)}</td>
+        <td>${pctBar(value, rev, { color: "cost" })}</td>
+      </tr>`;
+  }
+
+  function detailRows(key, details) {
+    if (!state.expanded[key]) return "";
+    return details.map(d => `
+      <tr class="cost-detail">
+        <td>${d.label}</td>
+        <td class="num">${fmtEUR(d.value)}</td>
+        <td>${pctBar(d.value, rev, { color: "cost-sub" })}</td>
+      </tr>`).join("");
+  }
+
+  const html = `
     <div class="pnl-head">
       <h2>P&L — ${opp.name} ${statusBadgeHTML(opp)}</h2>
       <div class="scenario-picker">
@@ -305,51 +389,95 @@ function renderPnL(opp) {
 
     <table class="pnl">
       <thead>
-        <tr><th></th><th class="num">€</th><th class="num">% of revenue</th></tr>
+        <tr><th></th><th class="num">€</th><th class="pct-col">% of revenue</th></tr>
       </thead>
       <tbody>
-        ${sectionHeader("Revenue")}
-        ${row("I. Villa sale (without licence)",   fmtEUR(r.revenues.I), { subLabel: true })}
-        ${row("II. Villa sale (with licence)",     fmtEUR(r.revenues.II), { subLabel: true })}
-        ${row("III. Villa sale (construction started)", fmtEUR(r.revenues.III), { subLabel: true })}
-        ${row("IV. Villa sale (construction finalized)", fmtEUR(r.revenues.IV), { subLabel: true, className: "hl" })}
 
-        ${sectionHeader("Costs")}
-        ${row("Land (incl. ITP, notary, commission)", `<span class="num">${fmtEUR(r.costs.landTotal)}</span><span class="pct">${pct(r.costs.landTotal)}</span>`)}
-        ${row("Setup costs",                           `<span class="num">${fmtEUR(r.costs.setupCost)}</span><span class="pct">${pct(r.costs.setupCost)}</span>`)}
-        ${row("Construction (PEM + PEC + other)",      `<span class="num">${fmtEUR(r.costs.construction)}</span><span class="pct">${pct(r.costs.construction)}</span>`)}
-        ${row("Contingencies",                         `<span class="num">${fmtEUR(r.costs.contingencies)}</span><span class="pct">${pct(r.costs.contingencies)}</span>`)}
-        ${row("Soft costs (architecture, PM, etc.)",   `<span class="num">${fmtEUR(r.costs.softCost)}</span><span class="pct">${pct(r.costs.softCost)}</span>`)}
-        <tr class="total"><td>Total costs</td><td class="num">${fmtEUR(r.pnl.totalCosts)}</td><td class="num">${pct(r.pnl.totalCosts)}</td></tr>
+        <tr class="section-header"><td colspan="3">Revenue</td></tr>
+        <tr class="line-primary">
+          <td>Gross sale</td>
+          <td class="num">${fmtEUR(r.pnl.revenue)}</td>
+          <td>${pctBar(r.pnl.revenue, rev, { color: "revenue" })}</td>
+        </tr>
 
-        <tr class="pnl-line"><td>EBITDA</td><td class="num">${fmtEUR(r.pnl.ebitda)}</td><td class="num">${pct(r.pnl.ebitda)}</td></tr>
-        ${row("Commercialization costs", `<span class="num">${fmtEUR(r.pnl.commercialization)}</span><span class="pct">${pct(r.pnl.commercialization)}</span>`, { subLabel: true })}
-        <tr class="pnl-line"><td>EBIT</td><td class="num">${fmtEUR(r.pnl.ebit)}</td><td class="num">${pct(r.pnl.ebit)}</td></tr>
-        ${row("Financing costs", `<span class="num">${fmtEUR(r.pnl.financing)}</span><span class="pct">${pct(r.pnl.financing)}</span>`, { subLabel: true })}
-        <tr class="pnl-line"><td>EBT</td><td class="num">${fmtEUR(r.pnl.ebt)}</td><td class="num">${pct(r.pnl.ebt)}</td></tr>
-        ${row("Taxes (IS)", `<span class="num">${fmtEUR(r.pnl.tax)}</span><span class="pct">${pct(r.pnl.tax)}</span>`, { subLabel: true })}
-        <tr class="pnl-line hl"><td>EAT (Net profit)</td><td class="num">${fmtEUR(r.pnl.eat)}</td><td class="num">${pct(r.pnl.eat)}</td></tr>
+        <tr class="section-spacer"><td colspan="3"></td></tr>
+
+        <tr class="section-header"><td colspan="3">Costs</td></tr>
+        ${expandableRow("land", "Land (incl. tax, notary, commission)", r.acquisition.total)}
+        ${detailRows("land", landDetails)}
+        <tr class="cost-row">
+          <td><span class="triangle-spacer"></span> Setup costs (${fmtPct(opp.setupRate, 0)} of acquisition)</td>
+          <td class="num">${fmtEUR(r.setupCost)}</td>
+          <td>${pctBar(r.setupCost, rev, { color: "cost" })}</td>
+        </tr>
+        ${expandableRow("hard", "Hard costs (construction)", r.hard.construction)}
+        ${detailRows("hard", hardDetails)}
+        <tr class="cost-row">
+          <td><span class="triangle-spacer"></span> Contingencies (${fmtPct(opp.hardCosts.contingenciesRate, 0)} of construction)</td>
+          <td class="num">${fmtEUR(r.hard.contingencies)}</td>
+          <td>${pctBar(r.hard.contingencies, rev, { color: "cost" })}</td>
+        </tr>
+        ${expandableRow("soft", "Soft costs (architecture, PM, etc.)", r.soft.total)}
+        ${detailRows("soft", softDetails)}
+        <tr class="line-primary subtle">
+          <td>Total costs</td>
+          <td class="num">${fmtEUR(r.pnl.totalCosts)}</td>
+          <td>${pctBar(r.pnl.totalCosts, rev, { color: "cost" })}</td>
+        </tr>
+
+        <tr class="section-spacer"><td colspan="3"></td></tr>
+
+        <tr class="section-header waterfall-header"><td colspan="3">EBITDA</td></tr>
+        <tr class="line-primary pos">
+          <td>EBITDA (Revenue − Costs)</td>
+          <td class="num">${fmtEUR(r.pnl.ebitda)}</td>
+          <td>${pctBar(r.pnl.ebitda, rev, { color: "profit" })}</td>
+        </tr>
+        <tr class="line-deduction">
+          <td><span class="triangle-spacer"></span> Commercialization costs (${fmtPct(opp.commercializationRate, 0)} of revenue)</td>
+          <td class="num">−${fmtEUR(r.pnl.commercialization)}</td>
+          <td>${pctBar(r.pnl.commercialization, rev, { color: "cost" })}</td>
+        </tr>
+
+        <tr class="section-spacer"><td colspan="3"></td></tr>
+
+        <tr class="section-header waterfall-header"><td colspan="3">EBIT</td></tr>
+        <tr class="line-primary pos">
+          <td>EBIT</td>
+          <td class="num">${fmtEUR(r.pnl.ebit)}</td>
+          <td>${pctBar(r.pnl.ebit, rev, { color: "profit" })}</td>
+        </tr>
+        <tr class="line-deduction">
+          <td><span class="triangle-spacer"></span> Financing costs (${fmtPct(opp.financingRate, 0)} of costs)</td>
+          <td class="num">−${fmtEUR(r.pnl.financing)}</td>
+          <td>${pctBar(r.pnl.financing, rev, { color: "cost" })}</td>
+        </tr>
+
+        <tr class="section-spacer"><td colspan="3"></td></tr>
+
+        <tr class="section-header waterfall-header"><td colspan="3">EBT</td></tr>
+        <tr class="line-primary pos">
+          <td>EBT</td>
+          <td class="num">${fmtEUR(r.pnl.ebt)}</td>
+          <td>${pctBar(r.pnl.ebt, rev, { color: "profit" })}</td>
+        </tr>
+        <tr class="line-deduction">
+          <td><span class="triangle-spacer"></span> Taxes (IS, ${fmtPct(opp.taxRate, 0)})</td>
+          <td class="num">−${fmtEUR(r.pnl.tax)}</td>
+          <td>${pctBar(r.pnl.tax, rev, { color: "cost" })}</td>
+        </tr>
+
+        <tr class="section-spacer"><td colspan="3"></td></tr>
+
+        <tr class="section-header waterfall-header eat-header"><td colspan="3">EAT</td></tr>
+        <tr class="line-primary pos eat-line">
+          <td>EAT (Net profit)</td>
+          <td class="num">${fmtEUR(r.pnl.eat)}</td>
+          <td>${pctBar(r.pnl.eat, rev, { color: "profit" })}</td>
+        </tr>
+
       </tbody>
     </table>
-
-    <div class="gross-profit">
-      <h3>Gross profit by sale stage</h3>
-      <table class="kv">
-        <thead>
-          <tr><th>Stage</th><th class="num">Revenue</th><th class="num">Gross profit</th><th class="num">Margin</th></tr>
-        </thead>
-        <tbody>
-          ${["I", "II", "III", "IV"].map(st => `
-            <tr${st === "IV" ? " class='hl'" : ""}>
-              <td>${st}. ${["without licence", "with licence", "construction started", "construction finalized"][["I", "II", "III", "IV"].indexOf(st)]}</td>
-              <td class="num">${fmtEUR(r.gross[st].revenue)}</td>
-              <td class="num">${fmtEUR(r.gross[st].profit)}</td>
-              <td class="num">${fmtPct(r.gross[st].margin)}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    </div>
   `;
   return html;
 }
@@ -359,14 +487,13 @@ function renderInvestors(opp) {
   const r = compute(opp, state.scenario);
   const eq = r.returns.equityInvested;
 
-  // Compute per-investor equity: derive Kakarot equity to fill the gap.
   const namedEquity = opp.investors.reduce((sum, i) => sum + (i.equity || 0), 0);
   const investors = opp.investors.map(i => ({
     ...i,
     computedEquity: i.equity == null ? eq - namedEquity : i.equity,
   }));
 
-  let html = `
+  return `
     <div class="pnl-head">
       <h2>Investors — ${opp.name} ${statusBadgeHTML(opp)}</h2>
       <div class="scenario-picker">
@@ -382,9 +509,9 @@ function renderInvestors(opp) {
     <h3>ROE analysis</h3>
     <table class="kv">
       <tbody>
-        ${row("Equity invested",                    fmtEUR(r.returns.equityInvested))}
-        ${row("Net profit (EAT, for distribution)", fmtEUR(r.returns.netProfit))}
-        ${row("ROE",                                `<strong>${fmtPct(r.returns.roe)}</strong>`)}
+        <tr><td>Equity invested</td><td class="num">${fmtEUR(r.returns.equityInvested)}</td></tr>
+        <tr><td>Net profit (EAT, for distribution)</td><td class="num">${fmtEUR(r.returns.netProfit)}</td></tr>
+        <tr class="hl"><td>ROE</td><td class="num"><strong>${fmtPct(r.returns.roe)}</strong></td></tr>
       </tbody>
     </table>
 
@@ -420,7 +547,7 @@ function renderInvestors(opp) {
             <tr>
               <td>${i.name}</td>
               <td class="num">${fmtEUR(i.computedEquity)}</td>
-              <td class="num">${fmtPct(i.profitShare, 0)}</td>
+              <td class="num">${fmtPct(i.profitShare, 1)}</td>
               <td class="num">${fmtEUR(profit)}</td>
               <td class="num">${multiple == null ? "—" : multiple.toFixed(2) + "×"}</td>
             </tr>
@@ -429,7 +556,6 @@ function renderInvestors(opp) {
       </tbody>
     </table>
   `;
-  return html;
 }
 
 // ===== Tab dispatch =====
@@ -450,7 +576,7 @@ function renderTab() {
     case "investors":   main.innerHTML = renderInvestors(opp); break;
   }
 
-  // Wire up scenario pickers on P&L / Investors tabs
+  // Wire up scenario pickers
   const picker = document.getElementById("scenario-select") || document.getElementById("scenario-select-inv");
   if (picker) {
     picker.addEventListener("change", (e) => {
@@ -458,52 +584,35 @@ function renderTab() {
       renderTab();
     });
   }
-}
 
-// ===== Status badge =====
-function statusBadgeHTML(opp) {
-  if (!opp.status) return "";
-  const slug = opp.status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  return `<span class="status-badge status-${slug}">${opp.status}</span>`;
-}
-
-// ===== Placeholder renderer =====
-function renderPlaceholder(opp) {
-  return `
-    <div class="summary-head">
-      <div>
-        <h2>${opp.name} ${statusBadgeHTML(opp)}</h2>
-        <div class="muted">${opp.address || "Address TBD"}</div>
-      </div>
-    </div>
-    <div class="placeholder-panel">
-      <div class="placeholder-icon">📋</div>
-      <h3>No data yet</h3>
-      <p>This opportunity is at the <strong>"${opp.status}"</strong> stage. Numbers will be filled in as the project progresses.</p>
-      <p class="muted">To add data, edit <code>data/${state.oppKey}.js</code> — remove the <code>placeholder: true</code> flag and add the same fields as <code>el-cantal.js</code>.</p>
-    </div>
-  `;
+  // Wire up expand/collapse on cost rows
+  document.querySelectorAll(".expandable").forEach(row => {
+    row.addEventListener("click", () => {
+      const key = row.dataset.toggle;
+      state.expanded[key] = !state.expanded[key];
+      renderTab();
+    });
+  });
 }
 
 // ===== Bootstrap =====
 function init() {
-  // Use explicit order if available, else fall back to insertion order.
   const oppKeys = window.OPPORTUNITY_ORDER && window.OPPORTUNITY_ORDER.length
     ? window.OPPORTUNITY_ORDER
     : Object.keys(window.OPPORTUNITIES);
   state.oppKey = oppKeys[0];
 
-  // Opportunity dropdown
   const select = document.getElementById("opportunity-select");
   select.innerHTML = oppKeys.map(k =>
     `<option value="${k}">${window.OPPORTUNITIES[k].name}</option>`
   ).join("");
   select.addEventListener("change", (e) => {
     state.oppKey = e.target.value;
+    // Reset expanded state when switching opportunities
+    state.expanded = { land: false, hard: false, soft: false };
     renderTab();
   });
 
-  // Tab buttons
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       state.tab = btn.dataset.tab;

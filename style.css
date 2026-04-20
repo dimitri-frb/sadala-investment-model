@@ -140,37 +140,16 @@ table.kv td, table.pnl td {
 }
 table.kv tr:last-child td, table.pnl tr:last-child td { border-bottom: none; }
 
-td.num, th.num { text-align: right; }
+td.num, th.num { text-align: right; white-space: nowrap; }
 
-tr.derived td { color: #6b7280; font-style: italic; }
-tr.sub td:first-child { padding-left: 28px; color: #4b5563; }
-
-/* P&L specific */
-tr.section td {
+tr.derived td {
   font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #7a808c;
   background: #fafbfc;
-  padding: 12px 14px 6px;
-  border-top: 1px solid #e5e7eb;
 }
-tr.pnl-line td {
-  font-weight: 600;
-  background: #f9fafb;
-}
-tr.total td { font-weight: 600; border-top: 1px solid #d1d5db; }
+tr.sub td:first-child { padding-left: 30px; color: #4b5563; font-style: italic; }
+
 tr.hl td { background: #eff6ff; font-weight: 600; }
 tr.hl .num { color: #1e40af; }
-
-.pct {
-  display: inline-block;
-  min-width: 55px;
-  color: #7a808c;
-  font-size: 12px;
-  margin-left: 10px;
-}
 
 /* ===== P&L head ===== */
 .pnl-head {
@@ -189,12 +168,139 @@ tr.hl .num { color: #1e40af; }
   background: white;
 }
 
-/* ===== Misc colors for scenario labels in hypothesis tab ===== */
+/* ===== P&L table ===== */
+table.pnl {
+  border: 1px solid #e5e7eb;
+}
+table.pnl th.pct-col { width: 240px; text-align: left; }
+
+/* Section header */
+tr.section-header td {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  background: #f1f3f5;
+  padding: 10px 14px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+tr.waterfall-header td {
+  background: #eef2ff;
+  color: #3730a3;
+  border-top: 2px solid #c7d2fe;
+}
+
+tr.eat-header td {
+  background: #dcfce7;
+  color: #166534;
+  border-top: 2px solid #86efac;
+}
+
+/* Section spacer — adds vertical breathing room between P&L sections */
+tr.section-spacer td {
+  padding: 0;
+  background: #f6f7f9;
+  border: none;
+  height: 12px;
+}
+
+/* Primary lines (EBITDA, EBIT, EBT, EAT, Gross sale, Total costs) */
+tr.line-primary td {
+  font-weight: 600;
+  padding: 12px 14px;
+  background: white;
+}
+tr.line-primary.pos td { color: #0f766e; }
+tr.line-primary.subtle td { color: #1a1d24; background: #fafbfc; }
+tr.line-primary.eat-line td {
+  background: #f0fdf4;
+  font-size: 15px;
+  color: #14532d;
+}
+
+/* Deduction lines (sub-rows under each primary) */
+tr.line-deduction td {
+  color: #6b7280;
+  font-size: 13px;
+  background: #fcfcfd;
+}
+tr.line-deduction td:first-child { padding-left: 32px; }
+tr.line-deduction .num { color: #b91c1c; }
+
+/* Cost rows (expandable + leaf) */
+tr.cost-row td {
+  padding: 10px 14px;
+}
+tr.cost-row.expandable { cursor: pointer; }
+tr.cost-row.expandable:hover td { background: #f6f7f9; }
+tr.cost-row.expandable td:first-child { font-weight: 500; }
+
+.triangle {
+  display: inline-block;
+  width: 14px;
+  color: #6b7280;
+  font-size: 11px;
+  transition: transform 0.1s;
+}
+.triangle-spacer {
+  display: inline-block;
+  width: 14px;
+}
+
+/* Detail rows (shown on expand) */
+tr.cost-detail td {
+  background: #f9fafb;
+  color: #4b5563;
+  font-size: 13px;
+  padding: 6px 14px 6px 42px;
+  border-bottom: 1px solid #f1f3f5;
+}
+tr.cost-detail td:first-child { font-style: italic; }
+
+/* ===== % bar component ===== */
+.pct-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+}
+.pct-bar {
+  flex: 1;
+  height: 6px;
+  background: #eef0f4;
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 80px;
+}
+.pct-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s;
+}
+.pct-fill.pct-neutral  { background: #9ca3af; }
+.pct-fill.pct-revenue  { background: #2563eb; }
+.pct-fill.pct-profit   { background: #10b981; }
+.pct-fill.pct-cost     { background: #f87171; }
+.pct-fill.pct-cost-sub { background: #fca5a5; }
+
+.pct-text {
+  color: #6b7280;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  text-align: right;
+}
+
+/* ===== Property table — visually grouped ===== */
+table.property-table tr.derived td:first-child { font-weight: 600; }
+
+/* ===== Misc ===== */
 td.scen-worst { color: #991b1b; font-weight: 500; }
 td.scen-base  { color: #1e40af; font-weight: 500; }
 td.scen-best  { color: #166534; font-weight: 500; }
-
-.gross-profit { margin-top: 32px; }
 
 /* ===== Status badge ===== */
 .status-badge {
@@ -211,7 +317,6 @@ td.scen-best  { color: #166534; font-weight: 500; }
   color: #4b5563;
   border: 1px solid #e5e7eb;
 }
-/* Stage-specific colors */
 .status-offer-sent                  { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
 .status-proyecto-basico-submitted   { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
 .status-proyecto-basico-approved    { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
