@@ -158,7 +158,7 @@ function renderSummary(opp) {
     { label: "Revenue",                                              get: r => fmtEUR(r.pnl.revenue) },
     { label: "Costs",                                                get: r => fmtEUR(r.pnl.totalCosts) },
     { label: "Benefits (EAT)",                                       get: r => fmtEUR(r.pnl.eat), highlight: true },
-    { label: "Rentabilidad %",                                       get: r => fmtPct(r.returns.rentabilidad) },
+    { label: "Profit margin",                                        get: r => fmtPct(r.returns.rentabilidad) },
     { label: r => `Net IRR (${r.returns.durationMonths} mo)`,        get: r => fmtPct(r.returns.irrBase), highlight: true },
     { label: r => `Net IRR (${r.returns.durationMonths + 12} mo, 12-mo delay)`, get: r => fmtPct(r.returns.irrDelayed) },
     { label: "ROE",                                                  get: r => fmtPct(r.returns.roe), highlight: true },
