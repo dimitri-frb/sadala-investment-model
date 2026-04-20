@@ -208,7 +208,19 @@ tr.hl .num { color: #1e40af; }
 table.pnl {
   border: 1px solid #e5e7eb;
 }
-table.pnl th.pct-col { width: 240px; text-align: left; }
+table.pnl th.pct-col { width: 110px; text-align: right; padding-right: 18px; }
+
+/* In-table % text (replaces the old bars) */
+td.pct-text-cell { padding-right: 18px; }
+.pct-num {
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+tr.line-primary .pct-num { color: #1a1d24; font-weight: 600; }
+tr.line-primary.pos .pct-num { color: #059669; }
+tr.line-primary.eat-line .pct-num { color: #14532d; font-size: 14px; }
+tr.line-deduction .pct-num { color: #b91c1c; }
 
 /* Section header */
 tr.section-header td {
@@ -296,39 +308,64 @@ tr.cost-detail td {
 }
 tr.cost-detail td:first-child { font-style: italic; }
 
-/* ===== % bar component ===== */
-.pct-cell {
+/* ===== Revenue allocation (single bar above P&L) ===== */
+.allocation-section {
+  margin: 18px 0 28px;
+  padding: 20px 22px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+.alloc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+.alloc-head h3 { margin: 0; }
+.alloc-revenue { color: #6b7280; font-size: 13px; }
+.alloc-revenue strong { color: #1a1d24; font-size: 15px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+
+.alloc-bar {
+  display: flex;
+  height: 36px;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f1f3f5;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+  margin-bottom: 18px;
+}
+.alloc-seg {
+  transition: filter 0.15s;
+  min-width: 2px;
+  cursor: help;
+  position: relative;
+}
+.alloc-seg:hover { filter: brightness(1.12); }
+
+.alloc-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px 18px;
+}
+.alloc-legend-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 200px;
 }
-.pct-bar {
-  flex: 1;
-  height: 6px;
-  background: #eef0f4;
-  border-radius: 999px;
-  overflow: hidden;
-  min-width: 80px;
+.alloc-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
-.pct-fill {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.2s;
-}
-.pct-fill.pct-neutral  { background: #9ca3af; }
-.pct-fill.pct-revenue  { background: #2563eb; }
-.pct-fill.pct-profit   { background: #10b981; }
-.pct-fill.pct-cost     { background: #f87171; }
-.pct-fill.pct-cost-sub { background: #fca5a5; }
-
-.pct-text {
-  color: #6b7280;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  min-width: 52px;
-  text-align: right;
-}
+.alloc-legend-content { flex: 1; display: flex; justify-content: space-between; align-items: baseline; }
+.alloc-name { color: #1a1d24; font-size: 13px; }
+.alloc-values { display: flex; gap: 10px; align-items: baseline; font-variant-numeric: tabular-nums; }
+.alloc-pct { color: #1a1d24; font-weight: 600; font-size: 13px; }
+.alloc-eur { color: #7a808c; font-size: 12px; }
 
 /* ===== Property table — visually grouped ===== */
 table.property-table tr.derived td:first-child { font-weight: 600; }
