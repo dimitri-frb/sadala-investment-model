@@ -1,6 +1,10 @@
 # Internal / source files — not needed for the site
 villa_el_cantal_source.xlsx
 model_dump.txt
+.buganvilleas_source.xlsx
+.buganvilleas_dump.txt
+*.xlsx
+*_dump.txt
 
 # OS / editor
 .DS_Store
