@@ -6,6 +6,8 @@ window.OPPORTUNITY_ORDER.push("san-anton-50");
 window.OPPORTUNITIES["san-anton-50"] = {
   name: "Sosiego",
   address: "Buganvillas 14, 29018 Malaga",
+  stage: "acquired",
+  dealType: "buy-to-sell",
   status: "Basic project approved",
 
   // ====== PROPERTY ======

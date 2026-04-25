@@ -7,6 +7,8 @@ window.OPPORTUNITIES["el-cantal"] = {
   name: "El Cantal",
   address: "Leoni Benabu 41, 29018 Malaga",
   status: "Basic project submitted",
+  stage: "acquired",        // kanban: acquired | construction | rental | sold | analysis | offer-sent | no-go
+  dealType: "buy-to-sell",  // buy-to-sell | buy-to-rent
 
   // ====== PROPERTY ======
   property: {

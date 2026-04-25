@@ -10,6 +10,8 @@ window.OPPORTUNITIES["bolivia"] = {
   address: "Calle Bolivia 276, Pedregalejo, Málaga",
   status: "Offer sent",
   projectType: "rental",
+  stage: "offer-sent",
+  dealType: "buy-to-rent",
 
   // ====== PROPERTY ======
   property: {

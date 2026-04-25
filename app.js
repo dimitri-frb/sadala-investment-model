@@ -1383,6 +1383,171 @@ function renderRentalInvestors(opp) {
   `;
 }
 
+// ===================================================================
+// ===== Portfolio (kanban) renderer =================================
+// ===================================================================
+
+const KANBAN_STAGES = {
+  current:   ["acquired", "construction", "rental", "sold"],
+  potential: ["analysis", "offer-sent", "no-go"],
+};
+const STAGE_LABELS = {
+  acquired:     "Acquired",
+  construction: "Construction in progress",
+  rental:       "Rental",
+  sold:         "Sold",
+  analysis:     "Analysis in progress",
+  "offer-sent": "Offer sent",
+  "no-go":      "No go",
+};
+const DEAL_TYPE_LABELS = {
+  "buy-to-sell": "Buy to sell",
+  "buy-to-rent": "Buy to rent",
+  "buy-to-flip": "Buy to flip",
+};
+
+function portfolioCardKPI(opp) {
+  if (opp.placeholder) return `<div class="kb-kpi muted">No data yet</div>`;
+  try {
+    if (opp.projectType === "rental") {
+      const base = compute(opp, "base");
+      const best = compute(opp, "best");
+      return `
+        <div class="kb-kpi">
+          <span class="kb-kpi-label">Levered IRR</span>
+          <span class="kb-kpi-value">${fmtPct(base.irr.levered)} <span class="kb-kpi-best">/ ${fmtPct(best.irr.levered)} best</span></span>
+        </div>`;
+    } else {
+      const r = compute(opp, "base");
+      return `
+        <div class="kb-kpi">
+          <span class="kb-kpi-label">Base IRR</span>
+          <span class="kb-kpi-value">${fmtPct(r.returns.irrBase)} <span class="kb-kpi-best">· ROE ${fmtPct(r.returns.roe)}</span></span>
+        </div>`;
+    }
+  } catch (e) {
+    return `<div class="kb-kpi muted">—</div>`;
+  }
+}
+
+function renderPortfolioCard(oppKey, opp) {
+  const dealLabel = DEAL_TYPE_LABELS[opp.dealType] || (opp.dealType ? opp.dealType : "");
+  return `
+    <a class="kb-card kb-${opp.dealType || "unknown"}" href="#opp=${oppKey}&tab=summary">
+      <div class="kb-card-head">
+        <strong class="kb-card-name">${opp.name}</strong>
+        ${dealLabel ? `<span class="kb-tag tag-${opp.dealType}">${dealLabel}</span>` : ""}
+      </div>
+      ${opp.address ? `<div class="kb-card-address">${opp.address}</div>` : ""}
+      ${opp.status ? `<div class="kb-card-status">${opp.status}</div>` : ""}
+      ${portfolioCardKPI(opp)}
+    </a>`;
+}
+
+function findSadalaInvestor(opp) {
+  return (opp.investors || []).find(i => i.name && i.name.toLowerCase().startsWith("sadala"));
+}
+
+function sadalaEquityIn(opp, computed) {
+  const inv = findSadalaInvestor(opp);
+  if (!inv) return 0;
+  if (opp.projectType === "rental") return computed.totals.equityRequired;  // sole sponsor for now
+  if (inv.equity != null) return inv.equity;
+  // Derived: total equity - sum of named equity from other investors
+  const named = (opp.investors || []).reduce((s, i) => s + (i.equity || 0), 0);
+  return computed.returns.equityInvested - named;
+}
+
+function renderPortfolioKPIs() {
+  const allOpps = (window.OPPORTUNITY_ORDER || Object.keys(window.OPPORTUNITIES))
+    .map(k => ({ key: k, ...window.OPPORTUNITIES[k] }));
+  const isActive = (o) => KANBAN_STAGES.current.includes(o.stage) && o.stage !== "sold" && !o.placeholder;
+  const active = allOpps.filter(isActive);
+
+  let totalProjectCost = 0;
+  let totalSadalaEquity = 0;
+  let totalSadalaProfit = 0;
+
+  for (const opp of active) {
+    try {
+      const r = compute(opp, "base");
+      const sEq = sadalaEquityIn(opp, r);
+      totalSadalaEquity += sEq;
+
+      if (opp.projectType === "rental") {
+        totalProjectCost += r.totals.totalCost;
+        // Sadala net profit = total levered cashflow + initial equity (since cf[0] = -equity)
+        const netProfit = r.cashflows.levered.reduce((a, b) => a + b, 0);
+        totalSadalaProfit += netProfit;  // sole sponsor
+      } else {
+        totalProjectCost += r.totalCosts || 0;
+        const inv = findSadalaInvestor(opp);
+        const share = inv ? (inv.profitShare || 0) : 1;
+        totalSadalaProfit += (r.pnl.eat || 0) * share;
+      }
+    } catch (e) {}
+  }
+
+  const card = (label, value, sub) => `
+    <div class="pkpi">
+      <div class="pkpi-label">${label}</div>
+      <div class="pkpi-value">${value}</div>
+      ${sub ? `<div class="pkpi-sub">${sub}</div>` : ""}
+    </div>`;
+
+  return `
+    <div class="portfolio-kpis">
+      ${card("Active assets",                String(active.length), active.map(o => o.name).join(" · "))}
+      ${card("Capital deployed",             fmtEUR(totalProjectCost), "Sum of total project costs (base)")}
+      ${card("Sadala equity committed",      fmtEUR(totalSadalaEquity), "Active deals only")}
+      ${card("Expected profit (Sadala)",     fmtEUR(totalSadalaProfit), "Base case, share-weighted")}
+    </div>
+  `;
+}
+
+function renderPortfolio() {
+  const allOpps = (window.OPPORTUNITY_ORDER || Object.keys(window.OPPORTUNITIES)).map(k => ({ key: k, ...window.OPPORTUNITIES[k] }));
+
+  const byStage = {};
+  for (const o of allOpps) {
+    const s = o.stage || "analysis";
+    (byStage[s] = byStage[s] || []).push(o);
+  }
+
+  const renderColumn = (stage) => {
+    const items = byStage[stage] || [];
+    return `
+      <div class="kb-column">
+        <div class="kb-column-head">
+          <span class="kb-column-title">${STAGE_LABELS[stage]}</span>
+          <span class="kb-column-count">${items.length}</span>
+        </div>
+        <div class="kb-cards">
+          ${items.map(o => renderPortfolioCard(o.key, o)).join("") || `<div class="kb-empty">—</div>`}
+        </div>
+      </div>`;
+  };
+
+  return `
+    <div class="portfolio-head">
+      <h2>Portfolio</h2>
+      <p class="muted">All opportunities at a glance. Click any card to drill in.</p>
+    </div>
+
+    ${renderPortfolioKPIs()}
+
+    <h3>Current assets</h3>
+    <div class="kb-board">
+      ${KANBAN_STAGES.current.map(renderColumn).join("")}
+    </div>
+
+    <h3>Potential assets</h3>
+    <div class="kb-board">
+      ${KANBAN_STAGES.potential.map(renderColumn).join("")}
+    </div>
+  `;
+}
+
 // ===== Tab dispatch =====
 function renderTab() {
   writeHash();
@@ -1390,8 +1555,23 @@ function renderTab() {
   document.querySelectorAll(".tab-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.tab === state.tab));
 
-  const opp = window.OPPORTUNITIES[state.oppKey];
+  // Hide opportunity dropdown when on portfolio (it's irrelevant there).
+  const oppPicker = document.querySelector(".opp-picker");
+  if (oppPicker) oppPicker.style.display = state.tab === "portfolio" ? "none" : "";
+
+  // Hide global scenario picker when on portfolio (multiple opps shown).
+  const scenarioPicker = document.querySelector(".scenario-picker.global");
+  if (scenarioPicker) scenarioPicker.style.display = state.tab === "portfolio" ? "none" : "";
+
   const main = document.getElementById("main");
+
+  // Portfolio is project-agnostic — render before the per-opp branch.
+  if (state.tab === "portfolio") {
+    main.innerHTML = renderPortfolio();
+    return;
+  }
+
+  const opp = window.OPPORTUNITIES[state.oppKey];
   if (!opp) { main.innerHTML = "<p>No opportunity selected.</p>"; return; }
 
   // Update the "P&L" / "Cash flow" tab label based on project type
@@ -1440,7 +1620,7 @@ function init() {
   // Initialize from URL hash if present; otherwise defaults.
   const hashed = readHash();
   state.oppKey   = (hashed.opp && window.OPPORTUNITIES[hashed.opp]) ? hashed.opp : oppKeys[0];
-  state.tab      = ["summary", "hypothesis", "pnl", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
+  state.tab      = ["portfolio", "summary", "hypothesis", "pnl", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
   state.scenario = ["worst", "base", "best"].includes(hashed.scenario) ? hashed.scenario : "base";
 
   // Opportunity dropdown

@@ -7,5 +7,7 @@ window.OPPORTUNITIES["stradivarius-30"] = {
   name: "Stradivarius 30",
   address: "",
   status: "Offer sent",
+  stage: "offer-sent",
+  dealType: "buy-to-sell",   // adjust when scope is known
   placeholder: true,
 };

@@ -3,15 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Investment Model</title>
+  <title>Sadala — Investment Model</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark">●</span>
-      <span class="brand-name">Sadala · Investment Model</span>
-    </div>
+    <a href="#tab=portfolio" class="brand" aria-label="Sadala home">
+      <img src="logo.png" alt="Sadala" class="brand-logo" />
+      <span class="brand-name">Sadala</span>
+      <span class="brand-tagline">Investment Model</span>
+    </a>
     <div class="opp-picker">
       <label for="opportunity-select">Opportunity:</label>
       <select id="opportunity-select"></select>
@@ -20,6 +22,7 @@
 
   <nav class="tabs">
     <div class="tabs-list">
+      <button class="tab-btn"        data-tab="portfolio">Portfolio</button>
       <button class="tab-btn active" data-tab="summary">Summary</button>
       <button class="tab-btn"        data-tab="hypothesis">Hypothesis</button>
       <button class="tab-btn"        data-tab="pnl">P&amp;L</button>

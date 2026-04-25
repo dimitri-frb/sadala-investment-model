@@ -25,8 +25,25 @@ h3 { font-size: 14px; font-weight: 600; margin: 28px 0 10px; color: #3a3f4b; tex
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
 }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  color: inherit;
+}
+.brand:hover { opacity: 0.85; }
 .brand-mark { color: #2563eb; font-size: 10px; }
+.brand-logo { height: 28px; width: auto; display: block; }
+.brand-fallback { display: inline-flex; align-items: center; gap: 8px; }
+.brand-mark-svg { display: inline-flex; }
+.brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
+.brand-tagline { color: #7a808c; font-size: 13px; font-weight: 400; padding-left: 4px; border-left: 1px solid #e5e7eb; margin-left: 4px; padding-left: 12px; }
+@media (max-width: 600px) {
+  .brand-tagline { display: none; }
+}
 .opp-picker { display: flex; align-items: center; gap: 8px; }
 .opp-picker label { color: #7a808c; font-size: 13px; }
 .opp-picker select {
@@ -350,6 +367,163 @@ table.property-table tr.derived td:first-child { font-weight: 600; }
 td.scen-worst { color: #991b1b; font-weight: 500; }
 td.scen-base  { color: #1e40af; font-weight: 500; }
 td.scen-best  { color: #166534; font-weight: 500; }
+
+/* ===== Portfolio (kanban) ===== */
+.portfolio-head { margin-bottom: 20px; }
+.portfolio-head h2 { margin-bottom: 4px; }
+
+.portfolio-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.pkpi {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.pkpi-label {
+  color: #6b7280;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.pkpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1d24;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.pkpi-sub {
+  color: #7a808c;
+  font-size: 12px;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* Kanban board */
+.kb-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+  margin-top: 12px;
+}
+
+.kb-column {
+  background: #f1f3f5;
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 140px;
+}
+.kb-column-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 6px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 10px;
+}
+.kb-column-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #3a3f4b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.kb-column-count {
+  background: white;
+  border-radius: 999px;
+  padding: 1px 9px;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 600;
+  min-width: 22px;
+  text-align: center;
+}
+
+.kb-cards { display: flex; flex-direction: column; gap: 10px; }
+
+.kb-card {
+  display: block;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.1s, box-shadow 0.15s, border-color 0.15s;
+}
+.kb-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+  transform: translateY(-1px);
+}
+
+.kb-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.kb-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1d24;
+}
+.kb-card-address {
+  font-size: 11px;
+  color: #7a808c;
+  margin-bottom: 8px;
+}
+.kb-card-status {
+  font-size: 11px;
+  color: #6b7280;
+  margin: 6px 0 8px;
+  font-style: italic;
+}
+
+/* Deal type tags */
+.kb-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.kb-tag.tag-buy-to-sell { background: #dbeafe; color: #1e40af; }
+.kb-tag.tag-buy-to-rent { background: #dcfce7; color: #166534; }
+.kb-tag.tag-buy-to-flip { background: #fef3c7; color: #92400e; }
+
+/* Card KPI line */
+.kb-kpi {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.kb-kpi.muted { color: #9ca3af; font-style: italic; font-size: 12px; }
+.kb-kpi-label { font-size: 11px; color: #6b7280; }
+.kb-kpi-value { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kb-kpi-best { color: #6b7280; font-weight: 400; font-size: 11px; }
+
+.kb-empty {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+  padding: 16px 0;
+  font-style: italic;
+}
 
 /* ===== Rental: cash flow summary cards ===== */
 .cashflow-summary {
