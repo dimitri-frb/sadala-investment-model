@@ -53,8 +53,8 @@ window.OPPORTUNITIES["bolivia"] = {
   rental: {
     inflationRate: 0.02,                                 // applied to rents and OpEx
     otherIncomeRate: 0.10,                               // tenant pays 10% of misc expenses (added to revenue)
-    // Vacancy: 25% Y1, then ramping down 10pp per year, floor at 5%.
-    vacancySchedule: [0.25, 0.15, 0.05, 0.05, 0.05, 0.05],
+    // Vacancy: 25% Y1, ramping down to 20% by Y3, then steady.
+    vacancySchedule: [0.25, 0.22, 0.20, 0.20, 0.20, 0.20],
     operatingExpenses: {
       // Marketing and Management removed per Apr 2026 update.
       salaries:     0.04,
