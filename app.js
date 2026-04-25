@@ -1349,6 +1349,271 @@ function renderRentalInvestors(opp) {
 }
 
 // ===================================================================
+// ===== Bank Dossier (one-pager for financing requests) =============
+// ===================================================================
+
+function renderBankDossier(opp) {
+  const worst = compute(opp, "worst");
+  const base  = compute(opp, "base");
+  const best  = compute(opp, "best");
+
+  const totalCost = base.totalCosts;
+  const equityDeployed = base.returns.equityInvested;
+  const constructionCost = base.hard.construction;
+  // The "100% financing" ask = 100% of construction (= what equity hasn't already covered)
+  const loanAsk = constructionCost;
+  const ltcRatio = loanAsk / totalCost;
+  const equityCoveragePct = equityDeployed / totalCost;
+
+  const builtTotal = opp.property.sobreRasante + opp.property.bajoRasante + (opp.property.terrazas || 0);
+  const today = new Date();
+  const fmtToday = `${today.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`;
+
+  // Investor summary (from cap table)
+  const investors = (opp.investors || []).filter(i => (i.equity || 0) > 0 || i.role === "sponsor");
+  const namedEquity = (opp.investors || []).reduce((s, i) => s + (i.equity || 0), 0);
+  const investorRows = investors.map(i => {
+    const eq = i.equity != null ? i.equity : (equityDeployed - namedEquity);
+    return { name: i.name, equity: eq, share: eq / equityDeployed };
+  });
+
+  // Timeline highlights (only milestones that are still future or current)
+  const timeline = (opp.timeline || []).map(t => {
+    const date = t.date || (t.offsetFrom ? "computed" : "");
+    return { ...t, displayDate: date };
+  });
+
+  return `
+    <div class="dossier">
+      <div class="dossier-toolbar no-print">
+        <button onclick="window.print()" class="btn-primary">📄 Print / Save as PDF</button>
+        <span class="muted" style="margin-left: 12px;">Use Cmd+P → Save as PDF for a clean handout. Optimized for A4.</span>
+      </div>
+
+      <article class="dossier-page">
+        <header class="dossier-header">
+          <div class="dossier-brand">
+            <img src="logo.png" alt="Sadala" class="dossier-logo" />
+            <div>
+              <div class="dossier-brand-name">Sadala</div>
+              <div class="dossier-brand-tagline">Real Estate Development</div>
+            </div>
+          </div>
+          <div class="dossier-title">
+            <div class="dossier-doctype">Préstamo promotor — financing request</div>
+            <h1>${opp.name}</h1>
+            <div class="dossier-address">${opp.address || ""}</div>
+            <div class="dossier-meta">${fmtToday}</div>
+          </div>
+        </header>
+
+        <section class="dossier-ask">
+          <h2>The ask</h2>
+          <p class="dossier-lede">
+            We are seeking a development loan of <strong>${fmtEUR(loanAsk)}</strong>
+            (${fmtPct(ltcRatio, 0)} LTC) to finance the construction phase of
+            <strong>${opp.name}</strong>, a ${fmtNum(builtTotal, 0)} m² ${opp.property.tipologia || "villa"}
+            in ${(opp.address || "").split(",")[1] || "Málaga"}.
+            Equity (${fmtEUR(equityDeployed)}, ${fmtPct(equityCoveragePct, 0)} of project cost)
+            is fully deployed: land, taxes, soft costs, and the approved Basic Project.
+            The bank loan covers <strong>100% of construction</strong>, drawn down against
+            certified milestones.
+          </p>
+
+          <div class="dossier-stats">
+            <div class="ds-stat">
+              <div class="ds-stat-label">Total project cost</div>
+              <div class="ds-stat-value">${fmtEUR(totalCost)}</div>
+            </div>
+            <div class="ds-stat ds-stat-equity">
+              <div class="ds-stat-label">Equity already deployed</div>
+              <div class="ds-stat-value">${fmtEUR(equityDeployed)}</div>
+              <div class="ds-stat-sub">${fmtPct(equityCoveragePct, 0)} of project cost</div>
+            </div>
+            <div class="ds-stat ds-stat-loan">
+              <div class="ds-stat-label">Loan requested</div>
+              <div class="ds-stat-value">${fmtEUR(loanAsk)}</div>
+              <div class="ds-stat-sub">${fmtPct(ltcRatio, 0)} LTC · 100% of construction</div>
+            </div>
+            <div class="ds-stat">
+              <div class="ds-stat-label">Expected exit</div>
+              <div class="ds-stat-value">${fmtEUR(base.pnl.revenue)}</div>
+              <div class="ds-stat-sub">Base case sale price</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="dossier-grid">
+          <div class="ds-block">
+            <h2>Project</h2>
+            <table class="ds-kv">
+              <tr><td>Address</td><td>${opp.address || "—"}</td></tr>
+              <tr><td>Typology</td><td>${opp.property.tipologia || "—"}</td></tr>
+              <tr><td>Plot size</td><td>${fmtNum(opp.property.parcela, 0)} m²</td></tr>
+              <tr><td>Edificability</td><td>${fmtPct(opp.property.ratioEdificabilidad, 1)}</td></tr>
+              <tr><td>Built area</td><td>${fmtNum(builtTotal, 0)} m² (${fmtNum(opp.property.sobreRasante, 0)} sobre + ${fmtNum(opp.property.bajoRasante, 0)} bajo${opp.property.terrazas ? ` + ${fmtNum(opp.property.terrazas, 0)} terrazas` : ""})</td></tr>
+              <tr><td>Status</td><td><strong>${opp.status || "—"}</strong></td></tr>
+              <tr><td>Acquisition price</td><td>${fmtEUR(opp.acquisition.landPrice)}</td></tr>
+            </table>
+          </div>
+
+          <div class="ds-block">
+            <h2>Timeline</h2>
+            <ul class="ds-timeline">
+              ${timeline.map(t => `
+                <li class="ds-timeline-item ds-${t.status}">
+                  <span class="ds-tl-date">${t.displayDate || ""}</span>
+                  <span class="ds-tl-label">${t.label}</span>
+                </li>
+              `).join("")}
+            </ul>
+          </div>
+        </section>
+
+        <section class="ds-block ds-block-wide">
+          <h2>Financial projections (3 scenarios)</h2>
+          <table class="ds-financials">
+            <thead>
+              <tr>
+                <th></th>
+                <th class="num">Worst</th>
+                <th class="num ds-base-col">Base case</th>
+                <th class="num">Best</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Sale price (€/m²)</td>
+                <td class="num">${fmtEUR(opp.scenarios.worst.salePricePerSqm)}</td>
+                <td class="num ds-base-col">${fmtEUR(opp.scenarios.base.salePricePerSqm)}</td>
+                <td class="num">${fmtEUR(opp.scenarios.best.salePricePerSqm)}</td>
+              </tr>
+              <tr><td>Total revenue</td>
+                <td class="num">${fmtEUR(worst.pnl.revenue)}</td>
+                <td class="num ds-base-col">${fmtEUR(base.pnl.revenue)}</td>
+                <td class="num">${fmtEUR(best.pnl.revenue)}</td>
+              </tr>
+              <tr><td>Total costs</td>
+                <td class="num">${fmtEUR(worst.totalCosts)}</td>
+                <td class="num ds-base-col">${fmtEUR(base.totalCosts)}</td>
+                <td class="num">${fmtEUR(best.totalCosts)}</td>
+              </tr>
+              <tr class="ds-row-mid"><td>EBITDA</td>
+                <td class="num">${fmtEUR(worst.pnl.ebitda)}</td>
+                <td class="num ds-base-col">${fmtEUR(base.pnl.ebitda)}</td>
+                <td class="num">${fmtEUR(best.pnl.ebitda)}</td>
+              </tr>
+              <tr class="ds-row-eat"><td>Net profit (EAT)</td>
+                <td class="num">${fmtEUR(worst.pnl.eat)}</td>
+                <td class="num ds-base-col">${fmtEUR(base.pnl.eat)}</td>
+                <td class="num">${fmtEUR(best.pnl.eat)}</td>
+              </tr>
+              <tr><td>Margin (EAT / Revenue)</td>
+                <td class="num">${fmtPct(worst.pnl.eat / worst.pnl.revenue)}</td>
+                <td class="num ds-base-col">${fmtPct(base.pnl.eat / base.pnl.revenue)}</td>
+                <td class="num">${fmtPct(best.pnl.eat / best.pnl.revenue)}</td>
+              </tr>
+              <tr><td>ROE</td>
+                <td class="num">${fmtPct(worst.returns.roe)}</td>
+                <td class="num ds-base-col">${fmtPct(base.returns.roe)}</td>
+                <td class="num">${fmtPct(best.returns.roe)}</td>
+              </tr>
+              <tr><td>IRR (${base.returns.durationMonths} months)</td>
+                <td class="num">${fmtPct(worst.returns.irrBase)}</td>
+                <td class="num ds-base-col">${fmtPct(base.returns.irrBase)}</td>
+                <td class="num">${fmtPct(best.returns.irrBase)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="dossier-grid">
+          <div class="ds-block">
+            <h2>Capital structure</h2>
+            <table class="ds-kv">
+              ${investorRows.map(i => `
+                <tr>
+                  <td>${i.name}</td>
+                  <td class="num">${fmtEUR(i.equity)} <span class="muted">(${fmtPct(i.share, 0)})</span></td>
+                </tr>
+              `).join("")}
+              <tr class="ds-row-total">
+                <td><strong>Total equity</strong></td>
+                <td class="num"><strong>${fmtEUR(equityDeployed)}</strong></td>
+              </tr>
+            </table>
+            <p class="ds-note">Both partners have signed binding capital commitments. Equity already deployed at signing of this dossier.</p>
+          </div>
+
+          <div class="ds-block">
+            <h2>Loan terms requested</h2>
+            <table class="ds-kv">
+              <tr><td>Loan amount</td><td><strong>${fmtEUR(loanAsk)}</strong></td></tr>
+              <tr><td>Loan-to-cost</td><td>${fmtPct(ltcRatio, 0)}</td></tr>
+              <tr><td>Term</td><td>~${base.returns.durationMonths} months (construction + sale)</td></tr>
+              <tr><td>Drawdown</td><td>Tied to construction milestones, certified by aparejador</td></tr>
+              <tr><td>Repayment</td><td>Bullet at sale (or refinance to mortgage on unsold units)</td></tr>
+              <tr><td>Collateral</td><td>1st-rank hipoteca on the asset</td></tr>
+              <tr><td>Interest</td><td>Open to bank's offer</td></tr>
+            </table>
+          </div>
+        </section>
+
+        <section class="ds-block ds-block-wide">
+          <h2>Cost breakdown (base case)</h2>
+          <div class="ds-cost-grid">
+            <div class="ds-cost-row">
+              <span class="ds-cost-label">Land + acquisition</span>
+              <span class="ds-cost-bar"><span class="ds-cost-fill ds-cost-paid" style="width: ${(base.acquisition.total / totalCost * 100).toFixed(1)}%"></span></span>
+              <span class="ds-cost-value">${fmtEUR(base.acquisition.total)}</span>
+              <span class="ds-cost-pct">${fmtPct(base.acquisition.total / totalCost)}</span>
+            </div>
+            <div class="ds-cost-row">
+              <span class="ds-cost-label">Setup costs</span>
+              <span class="ds-cost-bar"><span class="ds-cost-fill ds-cost-paid" style="width: ${(base.setupCost / totalCost * 100).toFixed(1)}%"></span></span>
+              <span class="ds-cost-value">${fmtEUR(base.setupCost)}</span>
+              <span class="ds-cost-pct">${fmtPct(base.setupCost / totalCost)}</span>
+            </div>
+            <div class="ds-cost-row">
+              <span class="ds-cost-label">Soft costs (architect, licence, PM)</span>
+              <span class="ds-cost-bar"><span class="ds-cost-fill ds-cost-paid" style="width: ${(base.soft.total / totalCost * 100).toFixed(1)}%"></span></span>
+              <span class="ds-cost-value">${fmtEUR(base.soft.total)}</span>
+              <span class="ds-cost-pct">${fmtPct(base.soft.total / totalCost)}</span>
+            </div>
+            <div class="ds-cost-row">
+              <span class="ds-cost-label">Contingencies</span>
+              <span class="ds-cost-bar"><span class="ds-cost-fill ds-cost-paid" style="width: ${(base.hard.contingencies / totalCost * 100).toFixed(1)}%"></span></span>
+              <span class="ds-cost-value">${fmtEUR(base.hard.contingencies)}</span>
+              <span class="ds-cost-pct">${fmtPct(base.hard.contingencies / totalCost)}</span>
+            </div>
+            <div class="ds-cost-row ds-cost-construction">
+              <span class="ds-cost-label"><strong>Construction (PEM + PEC + other) — bank-financed</strong></span>
+              <span class="ds-cost-bar"><span class="ds-cost-fill ds-cost-loan" style="width: ${(base.hard.construction / totalCost * 100).toFixed(1)}%"></span></span>
+              <span class="ds-cost-value"><strong>${fmtEUR(base.hard.construction)}</strong></span>
+              <span class="ds-cost-pct"><strong>${fmtPct(base.hard.construction / totalCost)}</strong></span>
+            </div>
+            <div class="ds-cost-row ds-cost-total">
+              <span class="ds-cost-label"><strong>TOTAL</strong></span>
+              <span class="ds-cost-bar"></span>
+              <span class="ds-cost-value"><strong>${fmtEUR(totalCost)}</strong></span>
+              <span class="ds-cost-pct"><strong>100%</strong></span>
+            </div>
+          </div>
+        </section>
+
+        <footer class="dossier-footer">
+          <div>
+            <strong>Sadala SL</strong> · Real Estate Development · Málaga
+          </div>
+          <div class="muted">
+            Confidential — for the addressed bank only · ${fmtToday}
+          </div>
+        </footer>
+      </article>
+    </div>
+  `;
+}
+
+// ===================================================================
 // ===== Capital calls / contributions tab ===========================
 // ===================================================================
 
@@ -1794,16 +2059,17 @@ function renderTab() {
   }
   const cashflowBtn = document.querySelector('.tab-btn[data-tab="cashflow"]');
   if (cashflowBtn) cashflowBtn.style.display = isRental ? "none" : "";
+  const dossierBtn = document.querySelector('.tab-btn[data-tab="dossier"]');
+  if (dossierBtn) dossierBtn.style.display = isRental ? "none" : "";
 
   if (opp.placeholder) {
     main.innerHTML = renderPlaceholder(opp);
     return;
   }
 
-  // If user lands on cashflow tab while on a rental opp, redirect to pnl
-  // (which IS the cashflow for rental projects).
-  if (state.tab === "cashflow" && isRental) {
-    state.tab = "pnl";
+  // Dev-only tabs — redirect rentals to a sensible default
+  if ((state.tab === "cashflow" || state.tab === "dossier") && isRental) {
+    state.tab = state.tab === "cashflow" ? "pnl" : "summary";
     document.querySelectorAll(".tab-btn").forEach(b =>
       b.classList.toggle("active", b.dataset.tab === state.tab));
   }
@@ -1814,6 +2080,7 @@ function renderTab() {
     case "pnl":         main.innerHTML = isRental ? renderRentalCashFlow(opp)   : renderPnL(opp); break;
     case "cashflow":    main.innerHTML = renderCapitalCalls(opp); break;
     case "investors":   main.innerHTML = isRental ? renderRentalInvestors(opp)  : renderInvestors(opp); break;
+    case "dossier":     main.innerHTML = renderBankDossier(opp); break;
   }
 
   // Keep the global scenario picker in sync with current state
@@ -1843,7 +2110,7 @@ function init() {
   const hashed = readHash();
   if (hashed.opp && window.OPPORTUNITIES[hashed.opp]) {
     state.oppKey = hashed.opp;
-    state.tab    = ["summary", "hypothesis", "pnl", "cashflow", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
+    state.tab    = ["summary", "hypothesis", "pnl", "cashflow", "investors", "dossier"].includes(hashed.tab) ? hashed.tab : "summary";
   } else {
     state.oppKey = null;
     state.tab    = "portfolio";

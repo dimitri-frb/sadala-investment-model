@@ -668,6 +668,172 @@ table.contrib-schedule tr.period-cum-row td {
   color: #6b7280;
 }
 
+/* ===== Bank Dossier =================================================== */
+.dossier { max-width: 920px; margin: 0 auto; }
+.dossier-toolbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+}
+.btn-primary {
+  font: inherit;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn-primary:hover { background: #1d4ed8; }
+
+.dossier-page {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 32px 36px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+.dossier-page h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.02em; }
+.dossier-page h2 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dossier-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid #1a1d24;
+}
+.dossier-brand { display: flex; align-items: center; gap: 12px; }
+.dossier-logo { height: 48px; }
+.dossier-brand-name { font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+.dossier-brand-tagline { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+.dossier-title { text-align: right; }
+.dossier-doctype { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.dossier-address { color: #4b5563; font-size: 13px; margin-top: 2px; }
+.dossier-meta { color: #9ca3af; font-size: 11px; margin-top: 4px; }
+
+.dossier-ask { margin-bottom: 22px; }
+.dossier-lede { font-size: 14px; line-height: 1.55; color: #1a1d24; margin: 0 0 16px; }
+
+.dossier-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.ds-stat {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.ds-stat-label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.ds-stat-value { font-size: 18px; font-weight: 700; color: #1a1d24; font-variant-numeric: tabular-nums; }
+.ds-stat-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.ds-stat-equity { background: #eff6ff; border-color: #bfdbfe; }
+.ds-stat-equity .ds-stat-value { color: #1e40af; }
+.ds-stat-loan { background: #f0fdf4; border-color: #bbf7d0; }
+.ds-stat-loan .ds-stat-value { color: #166534; }
+
+.dossier-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.ds-block { padding: 4px 0; }
+.ds-block-wide { grid-column: 1 / -1; margin-bottom: 18px; }
+
+table.ds-kv {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+table.ds-kv td { padding: 5px 0; vertical-align: top; }
+table.ds-kv td:first-child { color: #6b7280; padding-right: 12px; }
+table.ds-kv td:last-child  { font-variant-numeric: tabular-nums; }
+table.ds-kv tr.ds-row-total td { border-top: 1px solid #d1d5db; padding-top: 8px; font-weight: 600; }
+
+ul.ds-timeline { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+.ds-timeline-item { display: flex; gap: 8px; padding: 4px 0; }
+.ds-tl-date { color: #9ca3af; font-size: 11px; min-width: 80px; padding-top: 2px; }
+.ds-tl-label { color: #1a1d24; }
+.ds-timeline-item.ds-done .ds-tl-label { font-weight: 500; color: #059669; }
+.ds-timeline-item.ds-done::before  { content: "✓ "; color: #10b981; font-weight: 700; }
+.ds-timeline-item.ds-expected::before { content: "○ "; color: #9ca3af; }
+
+table.ds-financials {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+table.ds-financials th, table.ds-financials td { padding: 7px 10px; }
+table.ds-financials thead th { background: #f3f4f6; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #4b5563; border-bottom: 1px solid #d1d5db; }
+table.ds-financials tbody tr { border-bottom: 1px solid #f1f3f5; }
+table.ds-financials tbody td:first-child { color: #4b5563; }
+table.ds-financials tr.ds-row-mid td { font-weight: 500; background: #fafbfc; }
+table.ds-financials tr.ds-row-eat td { font-weight: 700; background: #f0fdf4; color: #14532d; }
+.ds-base-col { background: #eff6ff; }
+table.ds-financials tr.ds-row-eat td.ds-base-col { background: #dcfce7; }
+
+.ds-cost-grid { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.ds-cost-row { display: grid; grid-template-columns: 280px 1fr 110px 60px; gap: 12px; align-items: center; }
+.ds-cost-label { color: #1a1d24; }
+.ds-cost-bar { height: 12px; background: #f3f4f6; border-radius: 999px; overflow: hidden; }
+.ds-cost-fill { display: block; height: 100%; }
+.ds-cost-fill.ds-cost-paid { background: #93c5fd; }
+.ds-cost-fill.ds-cost-loan { background: #86efac; }
+.ds-cost-value { text-align: right; font-variant-numeric: tabular-nums; }
+.ds-cost-pct { text-align: right; color: #6b7280; font-size: 12px; font-variant-numeric: tabular-nums; }
+.ds-cost-construction { background: #f0fdf4; padding: 6px 8px; border-radius: 6px; }
+.ds-cost-total { border-top: 1px solid #d1d5db; padding-top: 8px; margin-top: 4px; }
+
+.ds-note { font-size: 11px; color: #6b7280; font-style: italic; margin-top: 8px; line-height: 1.4; }
+
+.dossier-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Print: hide app chrome, show only the dossier page */
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: white; }
+  .topbar, .tabs, .no-print { display: none !important; }
+  main { padding: 0; max-width: none; margin: 0; }
+  .dossier { max-width: none; }
+  .dossier-page { border: none; box-shadow: none; padding: 0; border-radius: 0; }
+  .dossier-grid { gap: 12px; }
+  .dossier-stats { gap: 6px; }
+  .ds-stat { padding: 8px 10px; }
+  .ds-stat-value { font-size: 14px; }
+  table.ds-financials { font-size: 11px; }
+  table.ds-financials th, table.ds-financials td { padding: 4px 6px; }
+  .ds-cost-row { grid-template-columns: 200px 1fr 90px 50px; }
+  h2 { font-size: 11px !important; }
+  .dossier-page h1 { font-size: 22px; }
+}
+
 /* ===== Profit distribution ===== */
 .distribution-section {
   margin-top: 36px;
