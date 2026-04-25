@@ -101,9 +101,16 @@ function computeRental(opp, scenarioKey) {
   const totalCost = A.purchasePrice + acquisitionCosts + renovationTotal;
 
   // --- Bank loan ---
-  const bankCovers = (F.bankCoversAcquisition ? A.purchasePrice : 0)
-                   + (F.bankCoversRenovation ? renovationTotal : 0);
-  const loanAmount = bankCovers;
+  // Loan can be specified as either:
+  //   - F.ltcRate: % of (purchase + reno), excluding notary/other costs (preferred)
+  //   - F.bankCoversAcquisition / F.bankCoversRenovation booleans (legacy)
+  let loanAmount;
+  if (F.ltcRate != null) {
+    loanAmount = (A.purchasePrice + renovationTotal) * F.ltcRate;
+  } else {
+    loanAmount = (F.bankCoversAcquisition ? A.purchasePrice : 0)
+               + (F.bankCoversRenovation ? renovationTotal : 0);
+  }
   const equityRequired = totalCost - loanAmount;
 
   // --- Amortization ---
@@ -128,17 +135,19 @@ function computeRental(opp, scenarioKey) {
 
     // OpEx and CapEx are computed on POTENTIAL gross income (PGI), not EGI —
     // operating costs don't disappear when a unit is vacant.
-    const oxRates = RT.operatingExpenses;
-    const opex = {
-      marketing:    grossPotential * (oxRates.marketing    || 0),
-      salaries:     grossPotential * (oxRates.salaries     || 0),
-      maintenance:  grossPotential * (oxRates.maintenance  || 0),
-      management:   grossPotential * (oxRates.management   || 0),
-      ibiInsurance: grossPotential * (oxRates.ibiInsurance || 0),
-    };
-    const totalOpEx = Object.values(opex).reduce((a, b) => a + b, 0);
+    // OpEx keys are data-driven: whatever's in `RT.operatingExpenses` gets included.
+    // CapEx is a top-level capexRate (or operatingExpenses.capex for legacy).
+    const opex = {};
+    let totalOpEx = 0;
+    for (const [key, rate] of Object.entries(RT.operatingExpenses || {})) {
+      if (key === "capex") continue;  // legacy: capex used to live here
+      const v = grossPotential * (rate || 0);
+      opex[key] = v;
+      totalOpEx += v;
+    }
     const noi = effectiveGross - totalOpEx;
-    const capex = grossPotential * (oxRates.capex || 0);
+    const capexRate = RT.capexRate != null ? RT.capexRate : (RT.operatingExpenses?.capex || 0);
+    const capex = grossPotential * capexRate;
     const cashFlowOps = noi - capex;
 
     const a = amort.years[y - 1];
@@ -311,7 +320,63 @@ function computeDevelopment(opp, scenarioKey) {
       equityReturn, durationMonths,
       irrBase, irrDelayed, irrDelayed24,
     },
+    phasedCashflow: buildDevPhasedCashflow({
+      acquisitionTotal: landTotal,
+      setupCost,
+      softCost,
+      contingencies,
+      equityInvested,
+      netProfit,
+      durationMonths,
+    }),
   };
+}
+
+// Build a year-by-year cashflow for development projects (more realistic than
+// a single Y0 outflow). Splits equity into:
+//   Y0: acquisition + setup (paid at signing)
+//   Y1..Y(N-1): soft costs + contingencies, spread evenly
+//   Y_exit (= N): equity + profit returned
+// Also computes the 12-month delay variant.
+function buildDevPhasedCashflow({ acquisitionTotal, setupCost, softCost, contingencies, equityInvested, netProfit, durationMonths }) {
+  const projectYears = Math.max(1, Math.round(durationMonths / 12));
+  const remaining = softCost + contingencies;
+  const constructionYears = Math.max(1, projectYears - 1);
+  const yearlyRemaining = remaining / constructionYears;
+
+  const yearsArr = [];
+  for (let y = 0; y <= projectYears + 1; y++) {
+    let outflow = 0;
+    let inflowBase = 0;
+    let inflowDelayed = 0;
+    if (y === 0) outflow = acquisitionTotal + setupCost;
+    else if (y < projectYears) outflow = yearlyRemaining;
+    if (y === projectYears) inflowBase = equityInvested + netProfit;
+    if (y === projectYears + 1) inflowDelayed = equityInvested + netProfit;
+    yearsArr.push({ year: y, outflow, inflowBase, inflowDelayed });
+  }
+
+  // Cumulative
+  let cumBase = 0, cumDelayed = 0;
+  yearsArr.forEach(c => {
+    const netBase = c.inflowBase - c.outflow;
+    const netDelayed = c.inflowDelayed - c.outflow;
+    cumBase += netBase;
+    cumDelayed += netDelayed;
+    c.netBase = netBase;
+    c.netDelayed = netDelayed;
+    c.cumBase = cumBase;
+    c.cumDelayed = cumDelayed;
+  });
+
+  // IRR from the phased cashflow (more accurate than the lump-sum IRR
+  // because not all equity is locked up at Y0).
+  const cfBase = yearsArr.map(c => c.netBase);
+  const cfDelayed = yearsArr.map(c => c.netDelayed);
+  const irrPhasedBase = irrNewton(cfBase);
+  const irrPhasedDelayed = irrNewton(cfDelayed);
+
+  return { yearsArr, projectYears, irrPhasedBase, irrPhasedDelayed };
 }
 
 // ===== State =====
@@ -427,6 +492,14 @@ function renderTimeline(opp) {
       </div>
       <div class="timeline">${inner}</div>
     </div>`;
+}
+
+// ===== Signed cash-flow cell (red bg if negative, green bg if positive) =====
+function cfCell(value) {
+  if (value == null || value === 0) return `<td class="num">—</td>`;
+  const cls = value < 0 ? "cf-neg" : "cf-pos";
+  const text = value < 0 ? `−${fmtEUR(-value)}` : `+${fmtEUR(value)}`;
+  return `<td class="num ${cls}">${text}</td>`;
 }
 
 // ===== Per-row % visualization (cell background fill) =====
@@ -843,29 +916,8 @@ function renderInvestors(opp) {
     computedEquity: i.equity == null ? eq - namedEquity : i.equity,
   }));
 
-  // Build a simple yearly cash flow projection.
-  // Equity goes out at year 0; everything comes back at exit (lump-sum).
-  // Extra rows: 12-month delay scenario.
-  const totalYears = Math.max(Math.ceil(r.returns.durationMonths / 12), 3);
-  const exitYear = Math.ceil(r.returns.durationMonths / 12);
-  const cashFlowYears = [];
-  for (let y = 0; y <= totalYears + 1; y++) {
-    let baseFlow = 0;
-    let delayedFlow = 0;
-    if (y === 0) { baseFlow = -eq; delayedFlow = -eq; }
-    if (y === exitYear) baseFlow = r.returns.equityReturn;
-    if (y === exitYear + 1) delayedFlow = r.returns.equityReturn;
-    cashFlowYears.push({ year: y, base: baseFlow, delayed: delayedFlow });
-  }
-  // Cumulative
-  let cumBase = 0, cumDelayed = 0;
-  cashFlowYears.forEach(c => {
-    cumBase += c.base;
-    cumDelayed += c.delayed;
-    c.cumBase = cumBase;
-    c.cumDelayed = cumDelayed;
-  });
-
+  const phased = r.phasedCashflow;
+  const exitYear = phased.projectYears;
   const fmtCF = v => v === 0 ? "—" : v < 0 ? `−${fmtEUR(-v)}` : fmtEUR(v);
 
   return `
@@ -922,38 +974,64 @@ function renderInvestors(opp) {
     </table>
 
     <h3>Yearly cash flow projection</h3>
-    <p class="muted">Equity is committed at Year 0 and returned in full at exit (single lump-sum, typical for development projects). The 12-month delay column shifts exit by one year.</p>
+    <p class="muted">
+      Equity is paid out across the project life: acquisition + setup at signing,
+      soft costs and contingencies during construction, then equity + profit
+      returned at exit. The 12-month delay column shifts exit by one year.
+    </p>
     <table class="kv cashflow-projection">
       <thead>
         <tr>
           <th>Year</th>
-          <th class="num">Base case</th>
+          <th class="num">Base</th>
           <th class="num">Cumulative</th>
-          <th class="num">12-mo delay</th>
+          <th class="num">+12 mo delay</th>
           <th class="num">Cumulative</th>
         </tr>
       </thead>
       <tbody>
-        ${cashFlowYears.map(c => {
+        ${phased.yearsArr.map(c => {
           const cls = c.year === exitYear ? "hl" : (c.year === exitYear + 1 ? "hl-soft" : "");
+          const cumCellBase    = c.cumBase    < 0 ? `<td class="num cf-neg-light">−${fmtEUR(-c.cumBase)}</td>`    : `<td class="num cf-pos-light">${fmtEUR(c.cumBase)}</td>`;
+          const cumCellDelayed = c.cumDelayed < 0 ? `<td class="num cf-neg-light">−${fmtEUR(-c.cumDelayed)}</td>` : `<td class="num cf-pos-light">${fmtEUR(c.cumDelayed)}</td>`;
           return `
             <tr class="${cls}">
               <td>Year ${c.year}</td>
-              <td class="num">${fmtCF(c.base)}</td>
-              <td class="num muted">${c.cumBase < 0 ? "−" + fmtEUR(-c.cumBase) : fmtEUR(c.cumBase)}</td>
-              <td class="num">${fmtCF(c.delayed)}</td>
-              <td class="num muted">${c.cumDelayed < 0 ? "−" + fmtEUR(-c.cumDelayed) : fmtEUR(c.cumDelayed)}</td>
-            </tr>
-          `;
+              ${cfCell(c.netBase)}
+              ${cumCellBase}
+              ${cfCell(c.netDelayed)}
+              ${cumCellDelayed}
+            </tr>`;
         }).join("")}
       </tbody>
     </table>
+
+    <p class="muted" style="margin-top: 8px;">
+      <em>Phased IRR (accounts for actual equity drawdown timing):</em>
+      base <strong>${fmtPct(phased.irrPhasedBase)}</strong> ·
+      with 12-mo delay <strong>${fmtPct(phased.irrPhasedDelayed)}</strong>
+    </p>
   `;
 }
 
 // ===================================================================
 // ===== Rental project type — renderers =============================
 // ===================================================================
+
+// Human-readable labels for OpEx categories. Add to this map when new
+// keys are introduced in opportunity data files.
+const OPEX_LABELS = {
+  marketing:    "Marketing",
+  salaries:     "Salaries",
+  maintenance:  "Maintenance & repairs",
+  management:   "Management",
+  ibiInsurance: "IBI & insurance",
+  agency:       "Agency commission",
+};
+function opexLabel(key) {
+  return OPEX_LABELS[key] || (key.charAt(0).toUpperCase() + key.slice(1));
+}
+
 
 function renderRentalSummary(opp) {
   const scenarios = ["worst", "base", "best"];
@@ -1020,7 +1098,11 @@ function renderRentalHypothesis(opp) {
 
   const totalRent = P.units.reduce((s, u) => s + u.monthlyRent, 0);
   const renovationBase = R.costPerSqm * P.totalSqm;
-  const monthly = mortgagePayment(A.purchasePrice + renovationBase * (1 + (R.contingenciesRate || 0)), F.interestRate, F.termYears);
+  const renovationTotal = renovationBase * (1 + (R.contingenciesRate || 0));
+  const loanForDisplay = F.ltcRate != null
+    ? (A.purchasePrice + renovationTotal) * F.ltcRate
+    : ((F.bankCoversAcquisition ? A.purchasePrice : 0) + (F.bankCoversRenovation ? renovationTotal : 0));
+  const monthly = mortgagePayment(loanForDisplay, F.interestRate, F.termYears);
 
   return `
     <h2>Hypothesis — ${opp.name}</h2>
@@ -1064,8 +1146,10 @@ function renderRentalHypothesis(opp) {
         <h3>Bank financing</h3>
         <table class="kv">
           <tbody>
-            ${hypRow("Bank covers acquisition",                  F.bankCoversAcquisition ? "Yes" : "No")}
-            ${hypRow("Bank covers renovation",                   F.bankCoversRenovation  ? "Yes" : "No")}
+            ${F.ltcRate != null
+              ? hypRow("Loan-to-cost (% of acquisition + reno)", fmtPct(F.ltcRate, 0))
+              : `${hypRow("Bank covers acquisition",  F.bankCoversAcquisition ? "Yes" : "No")}
+                 ${hypRow("Bank covers renovation",   F.bankCoversRenovation  ? "Yes" : "No")}`}
             ${hypRow("Interest rate",                            fmtPct(F.interestRate, 2))}
             ${hypRow("Loan term",                                `${F.termYears} years`)}
             ${hypRow("Amortization",                             F.amortizationStyle === "french" ? "French (constant payment)" : F.amortizationStyle)}
@@ -1080,12 +1164,11 @@ function renderRentalHypothesis(opp) {
             ${hypRow("Other income (% of rent, paid by tenant)", fmtPct(RT.otherIncomeRate || 0, 0))}
             ${hypRow("Hold period",                              `${RT.holdYears} years`)}
             ${hypRow("Vacancy schedule (Y1→Y" + RT.holdYears + ")", RT.vacancySchedule.slice(0, RT.holdYears).map(v => fmtPct(v, 0)).join(" · "))}
-            ${hypRow("Marketing (% of EGI)",                     fmtPct(RT.operatingExpenses.marketing, 0))}
-            ${hypRow("Salaries (% of EGI)",                      fmtPct(RT.operatingExpenses.salaries, 0))}
-            ${hypRow("Maintenance (% of EGI)",                   fmtPct(RT.operatingExpenses.maintenance, 0))}
-            ${hypRow("Management (% of EGI)",                    fmtPct(RT.operatingExpenses.management, 0))}
-            ${hypRow("IBI & insurance (% of EGI)",               fmtPct(RT.operatingExpenses.ibiInsurance, 0))}
-            ${hypRow("CapEx reserve (% of EGI)",                 fmtPct(RT.operatingExpenses.capex, 0))}
+            ${Object.entries(RT.operatingExpenses || {})
+              .filter(([k]) => k !== "capex")
+              .map(([k, v]) => hypRow(`${opexLabel(k)} (% of PGI)`, fmtPct(v, 0)))
+              .join("")}
+            ${hypRow("CapEx reserve (% of PGI)",                 fmtPct(RT.capexRate != null ? RT.capexRate : (RT.operatingExpenses?.capex || 0), 0))}
           </tbody>
         </table>
 
@@ -1179,11 +1262,12 @@ function renderRentalCashFlow(opp) {
         <tr class="section-spacer"><td colspan="${yearCols.length + 1}"></td></tr>
 
         <tr class="section-header"><td colspan="${yearCols.length + 1}">Operating expenses</td></tr>
-        ${row("Marketing",     c => c.opex.marketing,    { className: "line-deduction" })}
-        ${row("Salaries",      c => c.opex.salaries,     { className: "line-deduction" })}
-        ${row("Maintenance",   c => c.opex.maintenance,  { className: "line-deduction" })}
-        ${row("Management",    c => c.opex.management,   { className: "line-deduction" })}
-        ${row("IBI & insurance", c => c.opex.ibiInsurance, { className: "line-deduction" })}
+        ${(() => {
+          // Render an OpEx row for each key actually present in the data
+          // (in the order the user wrote them).
+          const opexKeys = Object.keys(opp.rental.operatingExpenses || {}).filter(k => k !== "capex");
+          return opexKeys.map(key => row(opexLabel(key), c => c.opex[key] || 0, { className: "line-deduction" })).join("");
+        })()}
         ${row("Total operating expenses", c => c.totalOpEx, { className: "line-primary subtle" })}
 
         <tr class="section-spacer"><td colspan="${yearCols.length + 1}"></td></tr>
@@ -1207,9 +1291,9 @@ function renderRentalCashFlow(opp) {
 
         <tr class="section-spacer"><td colspan="${yearCols.length + 1}"></td></tr>
 
-        <tr class="line-primary pos eat-line">
+        <tr class="line-primary cf-row">
           <td>Cash flow to equity (after debt)</td>
-          ${years.map(c => `<td class="num">${fmtNeg(c.cashFlowAfterDebt)}</td>`).join("")}
+          ${years.map(c => cfCell(c.cashFlowAfterDebt)).join("")}
         </tr>
       </tbody>
     </table>

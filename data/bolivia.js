@@ -24,7 +24,7 @@ window.OPPORTUNITIES["bolivia"] = {
   // ====== ACQUISITION ======
   // Sadala pays ITP + notary; bank covers the purchase price itself.
   acquisition: {
-    purchasePrice: 750000,
+    purchasePrice: 570000,
     landTaxRegime: "ITP",   // second-hand residential in Andalucía
     landTaxRate: 0.07,
     notary: 2200,           // fixed (consistent with other projects)
@@ -40,16 +40,12 @@ window.OPPORTUNITIES["bolivia"] = {
   },
 
   // ====== BANK FINANCING ======
-  // Bank covers acquisition + renovation (100% of those).
-  // NOTE: original screenshot showed a 5-year loan at 50% LTV. With 100% LTV,
-  // a 5-year term gives a debt service of ~€209k/yr vs Y1 NOI of ~€30k —
-  // structurally unviable. Defaulted to 25 years (typical residential mortgage).
-  // If the bank actually offered a different term, change `termYears` below.
+  // Loan = 50% × (purchase price + renovation total), excluding notary/other costs.
+  // Notary, ITP, agency fees and any other acquisition costs are paid by Sadala.
   financing: {
-    bankCoversAcquisition: true,
-    bankCoversRenovation: true,
-    interestRate: 0.045,
-    termYears: 25,
+    ltcRate: 0.50,             // 50% of (acquisition + reno)
+    interestRate: 0.045,       // 4.5%
+    termYears: 20,             // 20-year amortization
     amortizationStyle: "french",
   },
 
@@ -57,19 +53,20 @@ window.OPPORTUNITIES["bolivia"] = {
   rental: {
     inflationRate: 0.02,                                 // applied to rents and OpEx
     otherIncomeRate: 0.10,                               // tenant pays 10% of misc expenses (added to revenue)
-    vacancySchedule: [0.25, 0.15, 0.07, 0.06, 0.05, 0.04],
+    // Vacancy: 25% Y1, then ramping down 10pp per year, floor at 5%.
+    vacancySchedule: [0.25, 0.15, 0.05, 0.05, 0.05, 0.05],
     operatingExpenses: {
-      marketing:    0.02,
+      // Marketing and Management removed per Apr 2026 update.
       salaries:     0.04,
       maintenance:  0.06,
-      management:   0.02,
       ibiInsurance: 0.10,
-      capex:        0.01,
+      agency:       0.05,      // agency commission for finding tenants — % of PGI
     },
+    capexRate: 0.01,           // CapEx reserve, % of PGI (separate from OpEx)
     holdYears: 5,
     capitalGrowthRate: 0.01,
     saleCommissionRate: 0.02,
-    exitCapRate: 0.0692,    // = expected yield − growth (from screenshot)
+    exitCapRate: 0.0692,
   },
 
   taxRate: 0.25,
@@ -82,7 +79,7 @@ window.OPPORTUNITIES["bolivia"] = {
   scenarios: {
     worst: { rentMultiplier: 0.85, vacancyAdjust: +0.05, note: "Below-market rents, higher vacancy" },
     base:  { rentMultiplier: 1.00, vacancyAdjust:  0,    note: "Long-term rental, current rents" },
-    best:  { rentMultiplier: 1.50, vacancyAdjust: -0.02, note: "Touristic licence Y2+, premium rents" },
+    best:  { rentMultiplier: 2.00, vacancyAdjust: -0.02, note: "Touristic licence Y2+, rents ×2" },
   },
 
   // ====== TIMELINE ======

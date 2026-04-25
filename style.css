@@ -377,6 +377,31 @@ table.cashflow-table th.num { font-weight: 600; }
 table.cashflow-projection tr.hl td { background: #eff6ff; font-weight: 600; }
 table.cashflow-projection tr.hl-soft td { background: #fafbfc; }
 
+/* ===== Signed cash-flow cells (red bg if negative, green if positive) ===== */
+td.cf-neg {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  font-weight: 600;
+}
+td.cf-pos {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  font-weight: 600;
+}
+/* Lighter variants for cumulative columns */
+td.cf-neg-light {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+}
+td.cf-pos-light {
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+}
+
+/* When .cf-row contains cells, don't apply the eat-line green band — */
+/* the per-cell coloring takes over. */
+tr.cf-row td:first-child { background: white; font-weight: 600; }
+
 /* ===== Profit distribution ===== */
 .distribution-section {
   margin-top: 36px;
