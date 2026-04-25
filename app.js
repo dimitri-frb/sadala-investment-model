@@ -405,13 +405,17 @@ function readHash() {
 
 function writeHash() {
   const params = new URLSearchParams();
-  if (state.oppKey)   params.set("opp", state.oppKey);
-  if (state.tab)      params.set("tab", state.tab);
-  if (state.scenario) params.set("scenario", state.scenario);
-  const newHash = "#" + params.toString();
-  // Use replaceState so we don't clutter browser history on every click.
-  if (location.hash !== newHash) {
-    history.replaceState(null, "", newHash);
+  // Portfolio mode = no opp set. URL hash stays empty.
+  if (state.tab !== "portfolio" && state.oppKey) {
+    params.set("opp", state.oppKey);
+    if (state.tab && state.tab !== "summary") params.set("tab", state.tab);
+    if (state.scenario && state.scenario !== "base") params.set("scenario", state.scenario);
+  }
+  const qs = params.toString();
+  const newHash = qs ? "#" + qs : "";
+  if (location.hash.replace(/^#/, "") !== qs) {
+    if (newHash) history.replaceState(null, "", newHash);
+    else history.replaceState(null, "", location.pathname + location.search);
   }
 }
 
@@ -1551,22 +1555,27 @@ function renderPortfolio() {
 // ===== Tab dispatch =====
 function renderTab() {
   writeHash();
-  // Sync the active tab button class (in case tab changed via hash/back)
+  const isPortfolio = state.tab === "portfolio";
+
+  // Sync the active tab button class (only relevant in project view)
   document.querySelectorAll(".tab-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.tab === state.tab));
 
-  // Hide opportunity dropdown when on portfolio (it's irrelevant there).
-  const oppPicker = document.querySelector(".opp-picker");
-  if (oppPicker) oppPicker.style.display = state.tab === "portfolio" ? "none" : "";
+  // Toggle chrome based on view mode.
+  // Portfolio (home) view: hide tabs, dropdown, scenario picker, back-link.
+  // Project view: show all of those, hide back-link only on portfolio.
+  const tabsNav = document.querySelector("nav.tabs");
+  if (tabsNav) tabsNav.style.display = isPortfolio ? "none" : "";
 
-  // Hide global scenario picker when on portfolio (multiple opps shown).
-  const scenarioPicker = document.querySelector(".scenario-picker.global");
-  if (scenarioPicker) scenarioPicker.style.display = state.tab === "portfolio" ? "none" : "";
+  const oppPicker = document.querySelector(".opp-picker");
+  if (oppPicker) oppPicker.style.display = isPortfolio ? "none" : "";
+
+  const backLink = document.getElementById("back-to-portfolio");
+  if (backLink) backLink.style.display = isPortfolio ? "none" : "";
 
   const main = document.getElementById("main");
 
-  // Portfolio is project-agnostic — render before the per-opp branch.
-  if (state.tab === "portfolio") {
+  if (isPortfolio) {
     main.innerHTML = renderPortfolio();
     return;
   }
@@ -1617,10 +1626,15 @@ function init() {
     ? window.OPPORTUNITY_ORDER
     : Object.keys(window.OPPORTUNITIES);
 
-  // Initialize from URL hash if present; otherwise defaults.
+  // Initialize from URL hash. No opp in hash → portfolio (home) view.
   const hashed = readHash();
-  state.oppKey   = (hashed.opp && window.OPPORTUNITIES[hashed.opp]) ? hashed.opp : oppKeys[0];
-  state.tab      = ["portfolio", "summary", "hypothesis", "pnl", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
+  if (hashed.opp && window.OPPORTUNITIES[hashed.opp]) {
+    state.oppKey = hashed.opp;
+    state.tab    = ["summary", "hypothesis", "pnl", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
+  } else {
+    state.oppKey = null;
+    state.tab    = "portfolio";
+  }
   state.scenario = ["worst", "base", "best"].includes(hashed.scenario) ? hashed.scenario : "base";
 
   // Opportunity dropdown
@@ -1650,14 +1664,20 @@ function init() {
     renderTab();
   });
 
-  // React to back/forward navigation (hash changes externally)
+  // React to back/forward navigation, and to clicking links that change the hash.
   window.addEventListener("hashchange", () => {
     const h = readHash();
-    if (h.opp && window.OPPORTUNITIES[h.opp])          state.oppKey   = h.opp;
-    if (["summary","hypothesis","pnl","investors"].includes(h.tab))  state.tab = h.tab;
-    if (["worst","base","best"].includes(h.scenario))  state.scenario = h.scenario;
-    // Keep the dropdown in sync
-    if (select.value !== state.oppKey) select.value = state.oppKey;
+    if (h.opp && window.OPPORTUNITIES[h.opp]) {
+      // Project view
+      state.oppKey = h.opp;
+      state.tab    = ["summary","hypothesis","pnl","investors"].includes(h.tab) ? h.tab : "summary";
+    } else {
+      // Portfolio (home) view
+      state.oppKey = null;
+      state.tab    = "portfolio";
+    }
+    if (["worst","base","best"].includes(h.scenario)) state.scenario = h.scenario;
+    if (state.oppKey && select.value !== state.oppKey) select.value = state.oppKey;
     renderTab();
   });
 
