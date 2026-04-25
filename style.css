@@ -631,6 +631,26 @@ table.contrib-schedule td .contrib-status {
 
 table.contrib-summary tr.muted td { color: #9ca3af; }
 
+/* Horizontal schedule (periods as columns) — wrap in a scroll container
+   for projects with many periods. */
+.schedule-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table.contrib-schedule { min-width: 600px; }
+table.contrib-schedule th { white-space: nowrap; }
+table.contrib-schedule td { white-space: nowrap; }
+table.contrib-schedule td.total-cell { font-weight: 600; }
+table.contrib-schedule tr.period-total-row td {
+  background: #fafbfc;
+  border-top: 2px solid #d1d5db;
+}
+table.contrib-schedule tr.period-cum-row td {
+  background: #fafbfc;
+  font-size: 12px;
+  color: #6b7280;
+}
+
 /* ===== Profit distribution ===== */
 .distribution-section {
   margin-top: 36px;

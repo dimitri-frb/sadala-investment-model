@@ -924,10 +924,6 @@ function renderInvestors(opp) {
     computedEquity: i.equity == null ? eq - namedEquity : i.equity,
   }));
 
-  const phased = r.phasedCashflow;
-  const exitYear = phased.projectYears;
-  const fmtCF = v => v === 0 ? "—" : v < 0 ? `−${fmtEUR(-v)}` : fmtEUR(v);
-
   return `
     <h2>Investors — ${opp.name} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
 
@@ -981,43 +977,8 @@ function renderInvestors(opp) {
       </tbody>
     </table>
 
-    <h3>Yearly cash flow projection</h3>
-    <p class="muted">
-      Equity is paid out across the project life: acquisition + setup at signing,
-      soft costs and contingencies during construction, then equity + profit
-      returned at exit. The 12-month delay column shifts exit by one year.
-    </p>
-    <table class="kv cashflow-projection">
-      <thead>
-        <tr>
-          <th>Year</th>
-          <th class="num">Base</th>
-          <th class="num">Cumulative</th>
-          <th class="num">+12 mo delay</th>
-          <th class="num">Cumulative</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${phased.yearsArr.map(c => {
-          const cls = c.year === exitYear ? "hl" : (c.year === exitYear + 1 ? "hl-soft" : "");
-          const cumCellBase    = c.cumBase    < 0 ? `<td class="num cf-neg-light">−${fmtEUR(-c.cumBase)}</td>`    : `<td class="num cf-pos-light">${fmtEUR(c.cumBase)}</td>`;
-          const cumCellDelayed = c.cumDelayed < 0 ? `<td class="num cf-neg-light">−${fmtEUR(-c.cumDelayed)}</td>` : `<td class="num cf-pos-light">${fmtEUR(c.cumDelayed)}</td>`;
-          return `
-            <tr class="${cls}">
-              <td>Year ${c.year}</td>
-              ${cfCell(c.netBase)}
-              ${cumCellBase}
-              ${cfCell(c.netDelayed)}
-              ${cumCellDelayed}
-            </tr>`;
-        }).join("")}
-      </tbody>
-    </table>
-
-    <p class="muted" style="margin-top: 8px;">
-      <em>Phased IRR (accounts for actual equity drawdown timing):</em>
-      base <strong>${fmtPct(phased.irrPhasedBase)}</strong> ·
-      with 12-mo delay <strong>${fmtPct(phased.irrPhasedDelayed)}</strong>
+    <p class="muted" style="margin-top: 16px;">
+      For per-investor capital deployment timing, see the <strong>Cash flow</strong> tab.
     </p>
   `;
 }
@@ -1398,6 +1359,20 @@ function fmtCallPeriod(p) {
   return m ? `${m[2]}${m[3]} ${m[1]}` : p;
 }
 
+// Format a specific call's display label. Prefers `date` (e.g. "2025-09-12"
+// → "12 Sep 2025") if present, otherwise falls back to the period.
+function fmtCallLabel(call) {
+  if (call && call.date) {
+    const m = call.date.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?$/);
+    if (m) {
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const monthName = months[parseInt(m[2], 10) - 1];
+      return m[3] ? `${parseInt(m[3], 10)} ${monthName} ${m[1]}` : `${monthName} ${m[1]}`;
+    }
+  }
+  return fmtCallPeriod(call ? call.period : "");
+}
+
 function collectCapitalCalls(opp) {
   const rows = [];
   for (const inv of opp.investors || []) {
@@ -1509,31 +1484,58 @@ function renderCapitalCalls(opp) {
     </table>
 
     <h3>Schedule by period</h3>
-    <table class="kv contrib-schedule">
-      <thead>
-        <tr>
-          <th>Period</th>
-          ${summary.filter(s => s.committed > 0).map(s => `<th class="num">${s.name}</th>`).join("")}
-          <th class="num">Total</th>
-          <th class="num">Cumulative</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${periodList.map(p => `
-          <tr>
-            <td><strong>${fmtCallPeriod(p.period)}</strong></td>
-            ${summary.filter(s => s.committed > 0).map(s => {
-              const call = (s.capitalCalls || []).find(c => c.period === p.period);
-              if (!call) return `<td class="num muted">—</td>`;
-              const cls = call.status === "paid" ? "cf-pos-light" : "cf-neg-light";
-              return `<td class="num ${cls}" title="${call.note || ""}">${fmtEUR(call.amount)}<div class="contrib-status status-${call.status}">${call.status}</div></td>`;
-            }).join("")}
-            <td class="num"><strong>${fmtEUR(p.total)}</strong></td>
-            <td class="num muted">${fmtEUR(p.cumulative)}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
+    ${(() => {
+      const investorsWithCalls = summary.filter(s => s.committed > 0);
+      const periods = periodList.map(p => p.period);
+      // Compute per-period totals + cumulative
+      const totalsPerPeriod = periods.map(per =>
+        investorsWithCalls.reduce((sum, inv) => {
+          const c = (inv.capitalCalls || []).find(x => x.period === per);
+          return sum + (c ? c.amount : 0);
+        }, 0)
+      );
+      let runningCum = 0;
+      const cumPerPeriod = totalsPerPeriod.map(t => (runningCum += t));
+
+      return `
+        <div class="schedule-scroll">
+          <table class="kv contrib-schedule">
+            <thead>
+              <tr>
+                <th>Investor</th>
+                ${periods.map(per => `<th class="num">${fmtCallPeriod(per)}</th>`).join("")}
+                <th class="num">Committed</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${investorsWithCalls.map(inv => `
+                <tr>
+                  <td><strong>${inv.name}</strong></td>
+                  ${periods.map(per => {
+                    const call = (inv.capitalCalls || []).find(c => c.period === per);
+                    if (!call) return `<td class="num muted">—</td>`;
+                    const cls = call.status === "paid" ? "cf-pos-light" : "cf-neg-light";
+                    const tooltip = [call.note, call.date ? `Paid ${fmtCallLabel(call)}` : null].filter(Boolean).join(" — ");
+                    return `<td class="num ${cls}" title="${tooltip}">${fmtEUR(call.amount)}</td>`;
+                  }).join("")}
+                  <td class="num total-cell">${fmtEUR(inv.committed)}</td>
+                </tr>
+              `).join("")}
+              <tr class="period-total-row">
+                <td><strong>Total per period</strong></td>
+                ${totalsPerPeriod.map(t => `<td class="num"><strong>${fmtEUR(t)}</strong></td>`).join("")}
+                <td class="num total-cell"><strong>${fmtEUR(totalCommitted)}</strong></td>
+              </tr>
+              <tr class="period-cum-row muted">
+                <td>Cumulative</td>
+                ${cumPerPeriod.map(c => `<td class="num">${fmtEUR(c)}</td>`).join("")}
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    })()}
 
     <h3>Detail</h3>
     <table class="kv contrib-detail">

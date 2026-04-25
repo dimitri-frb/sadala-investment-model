@@ -90,13 +90,32 @@ window.OPPORTUNITIES["san-anton-50"] = {
   ],
 
   // ====== CAP TABLE ======
-  // 49.5 / 49.5 between Sadala SL and Inimex SL, plus 0.5% free shares each
-  // to Bingin SC and Lili One SC.
-  // Sadala equity is derived (total equity invested − others' contributions).
+  // 49.5 / 49.5 profit split between Sadala SL and Inimex SL, plus 0.5% free
+  // shares each to Bingin SC and Lili One SC.
+  // Equity contributions: Inimex put in €520k (44% of total equity), Sadala
+  // covers the rest (€655,864, ≈56%) — Sadala has more skin despite equal
+  // profit share (sponsor terms).
+  // All capital has been deployed (status: paid).
   investors: [
-    { name: "Sadala SL",                 role: "sponsor",     equity: null,       profitShare: 0.495 },
-    { name: "Inimex SL",                 role: "investor",    equity: 587931.79,  profitShare: 0.495 },
-    { name: "Bingin SC (free shares)",   role: "free-shares", equity: 0,          profitShare: 0.005 },
-    { name: "Lili One SC (free shares)", role: "free-shares", equity: 0,          profitShare: 0.005 },
+    {
+      name: "Sadala SL", role: "sponsor", equity: null, profitShare: 0.495,
+      capitalCalls: [
+        { period: "2024-S2", amount: 655864, status: "paid", note: "Acquisition + initial costs (exact date TBC)" },
+      ],
+    },
+    {
+      name: "Inimex SL", role: "investor", equity: 520000, profitShare: 0.495,
+      capitalCalls: [
+        { period: "2025-S2", date: "2025-09-12", amount: 520000, status: "paid", note: "Equity contribution" },
+      ],
+    },
+    {
+      name: "Bingin SC (free shares)", role: "free-shares", equity: 0, profitShare: 0.005,
+      capitalCalls: [],
+    },
+    {
+      name: "Lili One SC (free shares)", role: "free-shares", equity: 0, profitShare: 0.005,
+      capitalCalls: [],
+    },
   ],
 };
