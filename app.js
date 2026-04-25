@@ -93,23 +93,27 @@ function computeRental(opp, scenarioKey) {
   const acquisitionCosts = itp + notary + agency;
 
   // --- Renovation cost ---
+  // Construction part (= bank-financeable). Furnishing is separate and paid
+  // by equity (Spanish banks don't typically finance free-standing furniture).
   const renovationBase = R.costPerSqm * opp.property.totalSqm;
   const renovationContingencies = renovationBase * (R.contingenciesRate || 0);
-  const renovationTotal = renovationBase + renovationContingencies;
+  const renovationConstruction = renovationBase + renovationContingencies;
+  const furnishingCost = R.furnishingCost || 0;
+  const renovationTotal = renovationConstruction + furnishingCost;
 
   // --- Total project cost ---
   const totalCost = A.purchasePrice + acquisitionCosts + renovationTotal;
 
   // --- Bank loan ---
   // Loan can be specified as either:
-  //   - F.ltcRate: % of (purchase + reno), excluding notary/other costs (preferred)
+  //   - F.ltcRate: % of (purchase + reno construction), excluding notary, furnishing & other costs
   //   - F.bankCoversAcquisition / F.bankCoversRenovation booleans (legacy)
   let loanAmount;
   if (F.ltcRate != null) {
-    loanAmount = (A.purchasePrice + renovationTotal) * F.ltcRate;
+    loanAmount = (A.purchasePrice + renovationConstruction) * F.ltcRate;
   } else {
     loanAmount = (F.bankCoversAcquisition ? A.purchasePrice : 0)
-               + (F.bankCoversRenovation ? renovationTotal : 0);
+               + (F.bankCoversRenovation ? renovationConstruction : 0);
   }
   const equityRequired = totalCost - loanAmount;
 
@@ -209,7 +213,7 @@ function computeRental(opp, scenarioKey) {
   return {
     type: "rental",
     acquisitionCosts: { itp, notary, agency, total: acquisitionCosts },
-    renovation: { base: renovationBase, contingencies: renovationContingencies, total: renovationTotal },
+    renovation: { base: renovationBase, contingencies: renovationContingencies, furnishing: furnishingCost, construction: renovationConstruction, total: renovationTotal },
     totals: { totalCost, loanAmount, equityRequired },
     debt: { monthlyPayment: amort.monthly, annualDebtService: amort.annual, schedule: amort.years },
     cashFlows,
@@ -1100,10 +1104,10 @@ function renderRentalHypothesis(opp) {
 
   const totalRent = P.units.reduce((s, u) => s + u.monthlyRent, 0);
   const renovationBase = R.costPerSqm * P.totalSqm;
-  const renovationTotal = renovationBase * (1 + (R.contingenciesRate || 0));
+  const renovationConstruction = renovationBase * (1 + (R.contingenciesRate || 0));
   const loanForDisplay = F.ltcRate != null
-    ? (A.purchasePrice + renovationTotal) * F.ltcRate
-    : ((F.bankCoversAcquisition ? A.purchasePrice : 0) + (F.bankCoversRenovation ? renovationTotal : 0));
+    ? (A.purchasePrice + renovationConstruction) * F.ltcRate
+    : ((F.bankCoversAcquisition ? A.purchasePrice : 0) + (F.bankCoversRenovation ? renovationConstruction : 0));
   const monthly = mortgagePayment(loanForDisplay, F.interestRate, F.termYears);
 
   return `
@@ -1138,7 +1142,8 @@ function renderRentalHypothesis(opp) {
           <tbody>
             ${hypRow("Cost per sqm",                             fmtEUR(R.costPerSqm))}
             ${hypRow("Total surface × cost",                     fmtEUR(R.costPerSqm * P.totalSqm), { derived: true })}
-            ${hypRow(`Contingencies (${fmtPct(R.contingenciesRate, 0)})`, "—")}
+            ${hypRow(`Contingencies (${fmtPct(R.contingenciesRate, 0)})`, fmtEUR(R.costPerSqm * P.totalSqm * R.contingenciesRate), { derived: true })}
+            ${R.furnishingCost ? hypRow("Furnishing (one-off, equity-funded)", fmtEUR(R.furnishingCost)) : ""}
             ${hypRow("Estimated duration",                       `${R.durationMonths} months`)}
           </tbody>
         </table>

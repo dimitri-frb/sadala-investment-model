@@ -8,7 +8,7 @@ window.OPPORTUNITY_ORDER.push("bolivia");
 window.OPPORTUNITIES["bolivia"] = {
   name: "Bolivia",
   address: "Calle Bolivia 276, Pedregalejo, Málaga",
-  status: "Property acquired",
+  status: "Offer sent",
   projectType: "rental",
 
   // ====== PROPERTY ======
@@ -32,11 +32,16 @@ window.OPPORTUNITIES["bolivia"] = {
   },
 
   // ====== RENOVATION ======
-  // €700/sqm × 183 m² = €128,100 base + 5% contingencies.
+  // House was renovated 10y ago — structure / plumbing / electrical are fine.
+  // Scope: windows + paint + kitchen + 2 bathrooms + wall changes for unit split.
+  // €600/sqm × 183 m² = €109,800 base + 10% contingencies.
+  // Furnishing is separate (mid-term rentals require furnished). Furnishing
+  // is paid by equity — Spanish banks typically don't finance free-standing furniture.
   renovation: {
-    costPerSqm: 700,
-    contingenciesRate: 0.05,
-    durationMonths: 6,      // estimate; adjust when we have a builder timeline
+    costPerSqm: 600,
+    contingenciesRate: 0.10,
+    furnishingCost: 20000,    // one-off furnishing budget, equity-funded
+    durationMonths: 6,        // estimate; adjust when we have a builder timeline
   },
 
   // ====== BANK FINANCING ======
@@ -85,10 +90,10 @@ window.OPPORTUNITIES["bolivia"] = {
 
   // ====== TIMELINE ======
   timeline: [
-    { id: "acquired",     label: "Property signed",  date: "2026-04", status: "done" },
-    { id: "reno-start",   label: "Renovation start", date: "2026-05", status: "expected" },
-    { id: "reno-end",     label: "Renovation end",   offsetFrom: "reno-start", offsetMonths: 6,  status: "expected" },
-    { id: "rental-start", label: "First tenants",    offsetFrom: "reno-end",   offsetMonths: 1,  status: "expected" },
+    { id: "acquired",     label: "Property signed",  date: "2026-05", status: "expected" },
+    { id: "reno-start",   label: "Renovation start", offsetFrom: "acquired",     offsetMonths: 1,  status: "expected" },
+    { id: "reno-end",     label: "Renovation end",   offsetFrom: "reno-start",   offsetMonths: 6,  status: "expected" },
+    { id: "rental-start", label: "First tenants",    offsetFrom: "reno-end",     offsetMonths: 1,  status: "expected" },
     { id: "exit",         label: "Exit / refinance", offsetFrom: "rental-start", offsetMonths: 60, status: "expected" },
   ],
 
