@@ -1021,12 +1021,14 @@ function renderInvestors(opp) {
 // Human-readable labels for OpEx categories. Add to this map when new
 // keys are introduced in opportunity data files.
 const OPEX_LABELS = {
-  marketing:    "Marketing",
-  salaries:     "Salaries",
-  maintenance:  "Maintenance & repairs",
-  management:   "Management",
-  ibiInsurance: "IBI & insurance",
-  agency:       "Agency commission",
+  marketing:         "Marketing",
+  salaries:          "Salaries",
+  maintenance:       "Maintenance & repairs",
+  management:        "Management",
+  ibiInsurance:      "IBI & insurance",
+  utilities:         "Water, electricity, etc.",
+  agency:            "Agency commission",
+  rentalCommissions: "Rental commissions",
 };
 function opexLabel(key) {
   return OPEX_LABELS[key] || (key.charAt(0).toUpperCase() + key.slice(1));

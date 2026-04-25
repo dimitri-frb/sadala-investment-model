@@ -56,11 +56,12 @@ window.OPPORTUNITIES["bolivia"] = {
     // Vacancy: 25% Y1, ramping down to 20% by Y3, then steady.
     vacancySchedule: [0.25, 0.22, 0.20, 0.20, 0.20, 0.20],
     operatingExpenses: {
-      // Marketing and Management removed per Apr 2026 update.
-      salaries:     0.04,
-      maintenance:  0.06,
-      ibiInsurance: 0.10,
-      agency:       0.05,      // agency commission for finding tenants — % of PGI
+      // Updated Apr 2026: only 4 lines — maintenance, IBI/insurance, utilities,
+      // rental commissions. Marketing / management / salaries / agency removed.
+      maintenance:       0.06,
+      ibiInsurance:      0.10,
+      utilities:         0.05,    // Water, electricity, etc. — placeholder, confirm with landlord/tenant split
+      rentalCommissions: 0.18,    // Recurring rental commissions (% of PGI)
     },
     capexRate: 0.01,           // CapEx reserve, % of PGI (separate from OpEx)
     holdYears: 5,
