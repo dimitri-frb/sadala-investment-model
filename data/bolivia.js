@@ -32,9 +32,9 @@ window.OPPORTUNITIES["bolivia"] = {
   },
 
   // ====== RENOVATION ======
-  // ~€1,000/sqm × 183 m² = €183,000 base + 5% contingencies.
+  // €700/sqm × 183 m² = €128,100 base + 5% contingencies.
   renovation: {
-    costPerSqm: 1000,
+    costPerSqm: 700,
     contingenciesRate: 0.05,
     durationMonths: 6,      // estimate; adjust when we have a builder timeline
   },
@@ -53,8 +53,8 @@ window.OPPORTUNITIES["bolivia"] = {
   rental: {
     inflationRate: 0.02,                                 // applied to rents and OpEx
     otherIncomeRate: 0.10,                               // tenant pays 10% of misc expenses (added to revenue)
-    // Vacancy: 25% Y1, ramping down to 20% by Y3, then steady.
-    vacancySchedule: [0.25, 0.22, 0.20, 0.20, 0.20, 0.20],
+    // Vacancy: 20% Y1, 10% Y2, then 5% steady from Y3 onward.
+    vacancySchedule: [0.20, 0.10, 0.05, 0.05, 0.05, 0.05],
     operatingExpenses: {
       // Updated Apr 2026: only 4 lines — maintenance, IBI/insurance, utilities,
       // rental commissions. Marketing / management / salaries / agency removed.
