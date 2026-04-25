@@ -588,10 +588,12 @@ table.contrib-detail td {
   height: 14px;
   background: #eef0f4;
   border-radius: 999px;
-  overflow: hidden;
   min-width: 120px;
 }
 .contrib-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
   height: 100%;
   border-radius: 999px;
   transition: width 0.2s;
@@ -599,6 +601,21 @@ table.contrib-detail td {
 .contrib-bar-fill.fully-paid { background: #10b981; }
 .contrib-bar-fill.partial    { background: #3b82f6; }
 .contrib-bar-fill.pending    { background: #d1d5db; }
+
+/* Hatched overflow stripe — shown when an investor has over-paid (>100%) */
+.contrib-bar-overflow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #047857 0 4px,
+    #10b981 4px 8px
+  );
+  border-radius: 0 999px 999px 0;
+  opacity: 0.85;
+}
 .contrib-bar-pct {
   position: absolute;
   top: 50%;

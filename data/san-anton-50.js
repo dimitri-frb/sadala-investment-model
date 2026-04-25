@@ -92,21 +92,25 @@ window.OPPORTUNITIES["san-anton-50"] = {
   // ====== CAP TABLE ======
   // 49.5 / 49.5 profit split between Sadala SL and Inimex SL, plus 0.5% free
   // shares each to Bingin SC and Lili One SC.
-  // Equity contributions: Inimex put in €520k (44% of total equity), Sadala
-  // covers the rest (€655,864, ≈56%) — Sadala has more skin despite equal
-  // profit share (sponsor terms).
-  // All capital has been deployed (status: paid).
+  //
+  // Equity is split 50/50 between Sadala and Inimex — each commits €587,931
+  // (= half of total equity ≈ €1,175,864). Current state:
+  //   - Sadala has paid €655,864 (over-paid by €67,933 — front-loaded the
+  //     project; effectively a short-term loan to cover Inimex's gap)
+  //   - Inimex has paid €520,000 and still needs to top up €67,931 to reach
+  //     their €587,931 commitment.
   investors: [
     {
-      name: "Sadala SL", role: "sponsor", equity: null, profitShare: 0.495,
+      name: "Sadala SL", role: "sponsor", equity: 587931, profitShare: 0.495,
       capitalCalls: [
-        { period: "2024-S2", amount: 655864, status: "paid", note: "Acquisition + initial costs (exact date TBC)" },
+        { period: "2024-S2", amount: 655864, status: "paid", note: "Acquisition + initial costs — over-funded by ~€67,933 to cover Inimex gap (date TBC)" },
       ],
     },
     {
-      name: "Inimex SL", role: "investor", equity: 520000, profitShare: 0.495,
+      name: "Inimex SL", role: "investor", equity: 587931, profitShare: 0.495,
       capitalCalls: [
-        { period: "2025-S2", date: "2025-09-12", amount: 520000, status: "paid", note: "Equity contribution" },
+        { period: "2025-S2", date: "2025-09-12", amount: 520000, status: "paid",     note: "First equity tranche" },
+        { period: "2026-S1", date: "2026-06",    amount: 67931,  status: "expected", note: "Top-up to complete €587,931 commitment (~June 2026)" },
       ],
     },
     {

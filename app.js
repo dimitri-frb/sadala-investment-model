@@ -1388,10 +1388,16 @@ function collectCapitalCalls(opp) {
 function computeContribSummary(opp) {
   return (opp.investors || []).map(inv => {
     const calls = inv.capitalCalls || [];
-    const committed = calls.reduce((s, c) => s + (c.amount || 0), 0);
+    // "Committed" is the target equity. Use inv.equity if set, otherwise
+    // fall back to the sum of capital calls (legacy behaviour).
+    const committed = inv.equity != null
+      ? inv.equity
+      : calls.reduce((s, c) => s + (c.amount || 0), 0);
     const paid = calls.filter(c => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
+    const expected = calls.filter(c => c.status === "expected").reduce((s, c) => s + (c.amount || 0), 0);
+    // remaining = committed − paid. Negative means over-paid.
     const remaining = committed - paid;
-    return { ...inv, committed, paid, remaining, pctPaid: committed ? paid / committed : 0 };
+    return { ...inv, committed, paid, expected, remaining, pctPaid: committed ? paid / committed : 0 };
   });
 }
 
@@ -1451,8 +1457,8 @@ function renderCapitalCalls(opp) {
           <th>Investor</th>
           <th class="num">Committed</th>
           <th class="num">Paid</th>
-          <th class="num">Remaining</th>
-          <th>% Paid</th>
+          <th class="num">Status</th>
+          <th>Progress</th>
         </tr>
       </thead>
       <tbody>
@@ -1466,15 +1472,33 @@ function renderCapitalCalls(opp) {
               <td><span class="muted">${inv.role === "free-shares" ? "free shares" : "no calls"}</span></td>
             </tr>`;
           }
-          const cls = inv.pctPaid >= 1 ? "fully-paid" : (inv.pctPaid > 0 ? "partial" : "pending");
+
+          // Determine status text + cell colour
+          let statusCell, barClass;
+          if (inv.remaining > 0.5) {
+            // Under-paid — still owes money
+            statusCell = `<td class="num cf-neg-light"><strong>−${fmtEUR(inv.remaining)}</strong> remaining</td>`;
+            barClass = inv.paid > 0 ? "partial" : "pending";
+          } else if (inv.remaining < -0.5) {
+            // Over-paid — front-loaded
+            statusCell = `<td class="num cf-pos-light"><strong>+${fmtEUR(-inv.remaining)}</strong> over commitment</td>`;
+            barClass = "fully-paid";
+          } else {
+            statusCell = `<td class="num cf-pos-light">Paid in full ✓</td>`;
+            barClass = "fully-paid";
+          }
+
+          const barWidth = Math.min(inv.pctPaid * 100, 100).toFixed(1);
+          const overflowPct = inv.pctPaid > 1 ? Math.min((inv.pctPaid - 1) * 100, 50).toFixed(1) : 0;
           return `<tr>
             <td>${inv.name}</td>
             <td class="num">${fmtEUR(inv.committed)}</td>
-            <td class="num cf-pos-light">${fmtEUR(inv.paid)}</td>
-            <td class="num ${inv.remaining > 0 ? "cf-neg-light" : ""}">${fmtEUR(inv.remaining)}</td>
+            <td class="num">${fmtEUR(inv.paid)}</td>
+            ${statusCell}
             <td>
               <div class="contrib-bar">
-                <div class="contrib-bar-fill ${cls}" style="width:${(inv.pctPaid * 100).toFixed(1)}%"></div>
+                <div class="contrib-bar-fill ${barClass}" style="width:${barWidth}%"></div>
+                ${overflowPct > 0 ? `<div class="contrib-bar-overflow" style="width:${overflowPct}%"></div>` : ""}
                 <span class="contrib-bar-pct">${fmtPct(inv.pctPaid, 0)}</span>
               </div>
             </td>
