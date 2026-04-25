@@ -65,7 +65,7 @@ window.OPPORTUNITIES["bolivia"] = {
     capexRate: 0.01,           // CapEx reserve, % of PGI (separate from OpEx)
     holdYears: 5,
     capitalGrowthRate: 0.01,
-    saleCommissionRate: 0.02,
+    saleCommissionRate: 0.05,
     exitCapRate: 0.0692,
   },
 
