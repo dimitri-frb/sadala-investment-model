@@ -1353,11 +1353,11 @@ function renderRentalInvestors(opp) {
 // ===================================================================
 
 function renderBankDossier(opp) {
-  // Bank dossier shows sale prices uplifted by +15% across all 3 scenarios
+  // Bank dossier shows sale prices uplifted by +10% across all 3 scenarios
   // (mid-market projection vs the internally-conservative baseline used in
   // Summary / P&L / Cash flow). Costs and structure unchanged — only the
   // top line moves, which mechanically lifts margin / ROE / IRR.
-  const DOSSIER_UPLIFT = 1.15;
+  const DOSSIER_UPLIFT = 1.10;
   const dossierOpp = {
     ...opp,
     scenarios: Object.fromEntries(
