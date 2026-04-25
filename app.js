@@ -1502,7 +1502,7 @@ function renderPortfolioKPIs() {
   return `
     <div class="portfolio-kpis">
       ${card("Active assets",                String(active.length), active.map(o => o.name).join(" · "))}
-      ${card("Capital deployed",             fmtEUR(totalProjectCost), "Sum of total project costs (base)")}
+      ${card("Asset value",                  fmtEUR(totalProjectCost), "Sum of total project costs (base)")}
       ${card("Sadala equity committed",      fmtEUR(totalSadalaEquity), "Active deals only")}
       ${card("Expected profit (Sadala)",     fmtEUR(totalSadalaProfit), "Base case, share-weighted")}
     </div>
