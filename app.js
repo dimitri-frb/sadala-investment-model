@@ -1561,14 +1561,10 @@ function renderTab() {
   document.querySelectorAll(".tab-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.tab === state.tab));
 
-  // Toggle chrome based on view mode.
-  // Tabs nav and back-link only shown in project view. Opp dropdown stays
-  // visible everywhere — user can navigate from anywhere.
+  // Tabs nav only shown in project view. Opp dropdown stays visible
+  // everywhere — user can navigate to any project from anywhere via it.
   const tabsNav = document.querySelector("nav.tabs");
   if (tabsNav) tabsNav.style.display = isPortfolio ? "none" : "";
-
-  const backLink = document.getElementById("back-to-portfolio");
-  if (backLink) backLink.style.display = isPortfolio ? "none" : "";
 
   // Keep dropdown in sync with current state
   const select = document.getElementById("opportunity-select");
