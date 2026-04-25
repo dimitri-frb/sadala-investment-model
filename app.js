@@ -15,8 +15,213 @@ function irrLumpSum(equityInvested, equityReturn, months) {
   return Math.pow(multiple, 12 / months) - 1;
 }
 
-// ===== Core engine =====
+// Newton-Raphson IRR for arbitrary cashflow series (year 0, 1, 2, ...).
+// Returns null when the cashflow has no sign change (no IRR exists) or fails to converge.
+function irrNewton(cashflows, guess = 0.10) {
+  if (!cashflows || cashflows.length < 2) return null;
+  // Need at least one positive and one negative flow; otherwise no IRR exists.
+  const hasPos = cashflows.some(x => x > 0);
+  const hasNeg = cashflows.some(x => x < 0);
+  if (!hasPos || !hasNeg) return null;
+
+  let r = guess;
+  for (let i = 0; i < 200; i++) {
+    let npv = 0, dnpv = 0;
+    for (let t = 0; t < cashflows.length; t++) {
+      const d = Math.pow(1 + r, t);
+      npv += cashflows[t] / d;
+      if (t > 0) dnpv += -t * cashflows[t] / (d * (1 + r));
+    }
+    if (Math.abs(dnpv) < 1e-12) break;
+    const delta = npv / dnpv;
+    r -= delta;
+    if (!isFinite(r) || r < -0.999) return null;
+    if (Math.abs(delta) < 1e-10) return r;
+  }
+  return null;
+}
+
+// French-amortization mortgage payment (monthly).
+function mortgagePayment(principal, annualRate, termYears) {
+  const r = annualRate / 12;
+  const n = termYears * 12;
+  if (r === 0) return principal / n;
+  return principal * r / (1 - Math.pow(1 + r, -n));
+}
+
+// Build month-by-month amortization schedule, return per-year aggregates
+// [{ year, interest, principal, endingBalance }].
+function amortizationByYear(principal, annualRate, termYears, holdYears) {
+  const r = annualRate / 12;
+  const monthly = mortgagePayment(principal, annualRate, termYears);
+  let balance = principal;
+  const years = [];
+  for (let y = 1; y <= holdYears; y++) {
+    let yInterest = 0, yPrincipal = 0;
+    for (let m = 0; m < 12; m++) {
+      const i = balance * r;
+      const p = Math.min(monthly - i, balance);
+      yInterest += i;
+      yPrincipal += p;
+      balance -= p;
+      if (balance < 0) balance = 0;
+    }
+    years.push({ year: y, interest: yInterest, principal: yPrincipal, endingBalance: balance });
+  }
+  return { years, monthly, annual: monthly * 12 };
+}
+
+// ===== Core engine: dispatcher =====
 function compute(opp, scenarioKey) {
+  if (opp.projectType === "rental") return computeRental(opp, scenarioKey);
+  return computeDevelopment(opp, scenarioKey);
+}
+
+// ===== Rental engine =====
+// Acquire + renovate + rent for `holdYears` + exit at residual value.
+function computeRental(opp, scenarioKey) {
+  const s = opp.scenarios[scenarioKey] || {};
+  const A = opp.acquisition;
+  const R = opp.renovation;
+  const F = opp.financing;
+  const RT = opp.rental;
+
+  // --- Acquisition costs (paid by Sadala if not bank-financed) ---
+  const itp = A.purchasePrice * (A.landTaxRate || 0);
+  const notary = A.notary != null ? A.notary : A.purchasePrice * (A.notaryRate || 0);
+  const agency = A.purchasePrice * (A.agencyCommissionRate || 0);
+  const acquisitionCosts = itp + notary + agency;
+
+  // --- Renovation cost ---
+  const renovationBase = R.costPerSqm * opp.property.totalSqm;
+  const renovationContingencies = renovationBase * (R.contingenciesRate || 0);
+  const renovationTotal = renovationBase + renovationContingencies;
+
+  // --- Total project cost ---
+  const totalCost = A.purchasePrice + acquisitionCosts + renovationTotal;
+
+  // --- Bank loan ---
+  const bankCovers = (F.bankCoversAcquisition ? A.purchasePrice : 0)
+                   + (F.bankCoversRenovation ? renovationTotal : 0);
+  const loanAmount = bankCovers;
+  const equityRequired = totalCost - loanAmount;
+
+  // --- Amortization ---
+  const amort = amortizationByYear(loanAmount, F.interestRate, F.termYears, RT.holdYears);
+
+  // --- Yearly cash flows ---
+  const baseAnnualRent = opp.property.units.reduce((sum, u) => sum + u.monthlyRent * 12, 0);
+  const adjustedBaseRent = baseAnnualRent * (s.rentMultiplier || 1);
+
+  const cashFlows = [];
+  for (let y = 1; y <= RT.holdYears; y++) {
+    const inflation = Math.pow(1 + (RT.inflationRate || 0), y - 1);
+    const tenantRent = adjustedBaseRent * inflation;
+    const otherIncome = tenantRent * (RT.otherIncomeRate || 0);
+    const grossPotential = tenantRent + otherIncome;        // PGI = rent + other income
+    const baseVacancy = RT.vacancySchedule[y - 1] != null
+      ? RT.vacancySchedule[y - 1]
+      : RT.vacancySchedule[RT.vacancySchedule.length - 1];
+    const vacancy = Math.max(0, Math.min(1, baseVacancy + (s.vacancyAdjust || 0)));
+    const vacancyLoss = grossPotential * vacancy;
+    const effectiveGross = grossPotential - vacancyLoss;    // EGI
+
+    // OpEx and CapEx are computed on POTENTIAL gross income (PGI), not EGI —
+    // operating costs don't disappear when a unit is vacant.
+    const oxRates = RT.operatingExpenses;
+    const opex = {
+      marketing:    grossPotential * (oxRates.marketing    || 0),
+      salaries:     grossPotential * (oxRates.salaries     || 0),
+      maintenance:  grossPotential * (oxRates.maintenance  || 0),
+      management:   grossPotential * (oxRates.management   || 0),
+      ibiInsurance: grossPotential * (oxRates.ibiInsurance || 0),
+    };
+    const totalOpEx = Object.values(opex).reduce((a, b) => a + b, 0);
+    const noi = effectiveGross - totalOpEx;
+    const capex = grossPotential * (oxRates.capex || 0);
+    const cashFlowOps = noi - capex;
+
+    const a = amort.years[y - 1];
+    const debtService = a.interest + a.principal;
+    const cashFlowAfterDebt = cashFlowOps - debtService;
+
+    cashFlows.push({
+      year: y,
+      grossPotential, vacancy, vacancyLoss, effectiveGross,
+      opex, totalOpEx, noi, capex, cashFlowOps,
+      interest: a.interest, principal: a.principal, debtService,
+      outstandingDebt: a.endingBalance,
+      cashFlowAfterDebt,
+    });
+  }
+
+  // --- Residual value at exit ---
+  // Two methods, we use cap rate (NOI / cap rate) as the standard income approach.
+  const finalCF = cashFlows[cashFlows.length - 1];
+  const exitYearNOI = finalCF.noi * (1 + (RT.inflationRate || 0));  // Year holdYears+1 NOI
+  const residualValueCapRate = exitYearNOI / RT.exitCapRate;
+
+  // Capital growth approach (used by the source screenshot)
+  const residualValueGrowth = A.purchasePrice
+    * Math.pow(1 + (RT.capitalGrowthRate || 0), RT.holdYears);
+
+  const residualValue = residualValueCapRate;  // primary
+  const saleCommission = residualValue * (RT.saleCommissionRate || 0);
+  const saleProceeds = residualValue - saleCommission;
+  const remainingDebt = finalCF.outstandingDebt;
+  const netToEquityAtExit = saleProceeds - remainingDebt;
+
+  // --- IRR (unlevered: as if all-cash; levered: actual equity flows) ---
+  const unleveredCF = [-totalCost, ...cashFlows.map(c => c.cashFlowOps)];
+  unleveredCF[unleveredCF.length - 1] += saleProceeds;
+  const unleveredIRR = irrNewton(unleveredCF);
+
+  const leveredCF = [-equityRequired, ...cashFlows.map(c => c.cashFlowAfterDebt)];
+  leveredCF[leveredCF.length - 1] += netToEquityAtExit;
+  const leveredIRR = irrNewton(leveredCF);
+
+  // --- Cash on cash multiples ---
+  const equityIn = -unleveredCF.filter(x => x < 0).reduce((a, b) => a + b, 0);
+  const equityOut = unleveredCF.filter(x => x > 0).reduce((a, b) => a + b, 0);
+  const unleveredMOIC = equityIn ? equityOut / equityIn : null;
+
+  const levEquityIn = -leveredCF.filter(x => x < 0).reduce((a, b) => a + b, 0);
+  const levEquityOut = leveredCF.filter(x => x > 0).reduce((a, b) => a + b, 0);
+  const leveredMOIC = levEquityIn ? levEquityOut / levEquityIn : null;
+
+  // --- Year-1 yields ---
+  const year1NOI = cashFlows[0].noi;
+  const grossYield = baseAnnualRent / totalCost;
+  const netYield = year1NOI / totalCost;
+
+  // --- "Net profit" for ROE display = sum of equity returns - equity in (over hold) ---
+  const totalLeveredCashOut = leveredCF.reduce((a, b) => a + b, 0);  // sum of all flows (negative + positive)
+
+  return {
+    type: "rental",
+    acquisitionCosts: { itp, notary, agency, total: acquisitionCosts },
+    renovation: { base: renovationBase, contingencies: renovationContingencies, total: renovationTotal },
+    totals: { totalCost, loanAmount, equityRequired },
+    debt: { monthlyPayment: amort.monthly, annualDebtService: amort.annual, schedule: amort.years },
+    cashFlows,
+    exit: {
+      finalNOI: finalCF.noi,
+      exitYearNOI,
+      residualValueCapRate, residualValueGrowth, residualValue,
+      saleCommission, saleProceeds, remainingDebt, netToEquityAtExit,
+    },
+    yields: { gross: grossYield, net: netYield, year1NOI },
+    irr: { unlevered: unleveredIRR, levered: leveredIRR },
+    moic: { unlevered: unleveredMOIC, levered: leveredMOIC },
+    cashflows: { unlevered: unleveredCF, levered: leveredCF },
+    summary: {
+      totalNetEquityReturn: totalLeveredCashOut,  // sum across all years (including initial)
+    },
+  };
+}
+
+// ===== Development engine (existing) =====
+function computeDevelopment(opp, scenarioKey) {
   const s = opp.scenarios[scenarioKey];
   const P = opp.property;
   const builtTotal = P.sobreRasante + P.bajoRasante + P.terrazas;
@@ -638,6 +843,31 @@ function renderInvestors(opp) {
     computedEquity: i.equity == null ? eq - namedEquity : i.equity,
   }));
 
+  // Build a simple yearly cash flow projection.
+  // Equity goes out at year 0; everything comes back at exit (lump-sum).
+  // Extra rows: 12-month delay scenario.
+  const totalYears = Math.max(Math.ceil(r.returns.durationMonths / 12), 3);
+  const exitYear = Math.ceil(r.returns.durationMonths / 12);
+  const cashFlowYears = [];
+  for (let y = 0; y <= totalYears + 1; y++) {
+    let baseFlow = 0;
+    let delayedFlow = 0;
+    if (y === 0) { baseFlow = -eq; delayedFlow = -eq; }
+    if (y === exitYear) baseFlow = r.returns.equityReturn;
+    if (y === exitYear + 1) delayedFlow = r.returns.equityReturn;
+    cashFlowYears.push({ year: y, base: baseFlow, delayed: delayedFlow });
+  }
+  // Cumulative
+  let cumBase = 0, cumDelayed = 0;
+  cashFlowYears.forEach(c => {
+    cumBase += c.base;
+    cumDelayed += c.delayed;
+    c.cumBase = cumBase;
+    c.cumDelayed = cumDelayed;
+  });
+
+  const fmtCF = v => v === 0 ? "—" : v < 0 ? `−${fmtEUR(-v)}` : fmtEUR(v);
+
   return `
     <h2>Investors — ${opp.name} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
 
@@ -690,6 +920,375 @@ function renderInvestors(opp) {
         }).join("")}
       </tbody>
     </table>
+
+    <h3>Yearly cash flow projection</h3>
+    <p class="muted">Equity is committed at Year 0 and returned in full at exit (single lump-sum, typical for development projects). The 12-month delay column shifts exit by one year.</p>
+    <table class="kv cashflow-projection">
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th class="num">Base case</th>
+          <th class="num">Cumulative</th>
+          <th class="num">12-mo delay</th>
+          <th class="num">Cumulative</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${cashFlowYears.map(c => {
+          const cls = c.year === exitYear ? "hl" : (c.year === exitYear + 1 ? "hl-soft" : "");
+          return `
+            <tr class="${cls}">
+              <td>Year ${c.year}</td>
+              <td class="num">${fmtCF(c.base)}</td>
+              <td class="num muted">${c.cumBase < 0 ? "−" + fmtEUR(-c.cumBase) : fmtEUR(c.cumBase)}</td>
+              <td class="num">${fmtCF(c.delayed)}</td>
+              <td class="num muted">${c.cumDelayed < 0 ? "−" + fmtEUR(-c.cumDelayed) : fmtEUR(c.cumDelayed)}</td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+// ===================================================================
+// ===== Rental project type — renderers =============================
+// ===================================================================
+
+function renderRentalSummary(opp) {
+  const scenarios = ["worst", "base", "best"];
+  const results = Object.fromEntries(scenarios.map(s => [s, compute(opp, s)]));
+  const scenLabel = { worst: "Worst", base: "Base", best: "Best" };
+
+  const kpis = [
+    { label: "Total project cost",   get: r => fmtEUR(r.totals.totalCost) },
+    { label: "Bank loan",            get: r => fmtEUR(r.totals.loanAmount) },
+    { label: "Sadala equity",        get: r => fmtEUR(r.totals.equityRequired) },
+    { label: "Year-1 NOI",           get: r => fmtEUR(r.yields.year1NOI) },
+    { label: "Net yield (Y1)",       get: r => fmtPct(r.yields.net) },
+    { label: "Unlevered IRR",        get: r => fmtPct(r.irr.unlevered), highlight: true },
+    { label: "Levered IRR",          get: r => fmtPct(r.irr.levered),   highlight: true },
+    { label: "Levered MOIC",         get: r => r.moic.levered ? r.moic.levered.toFixed(2) + "×" : "—", highlight: true },
+    { label: "Residual value (Y" + opp.rental.holdYears + ")", get: r => fmtEUR(r.exit.residualValue) },
+  ];
+
+  let html = `
+    <div class="summary-head">
+      <div>
+        <h2>${opp.name}</h2>
+        <div class="muted">${opp.address || "Address TBD"}</div>
+      </div>
+    </div>
+    ${renderTimeline(opp)}
+    <h3>Scenarios</h3>
+    <div class="scenario-grid">
+  `;
+
+  for (const scen of scenarios) {
+    const r = results[scen];
+    const note = (opp.scenarios[scen] || {}).note;
+    const rentMult = (opp.scenarios[scen] || {}).rentMultiplier || 1;
+    html += `
+      <div class="scenario-card scen-${scen}">
+        <div class="scen-head">
+          <div class="scen-name">${scenLabel[scen]} case</div>
+          <div class="scen-sub">Rents × ${rentMult}</div>
+          ${note ? `<div class="scen-note">${note}</div>` : ""}
+        </div>
+        <div class="scen-body">
+    `;
+    for (const k of kpis) {
+      const label = typeof k.label === "function" ? k.label(r) : k.label;
+      html += `
+        <div class="kpi ${k.highlight ? "kpi-hl" : ""}">
+          <div class="kpi-label">${label}</div>
+          <div class="kpi-value">${k.get(r)}</div>
+        </div>`;
+    }
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderRentalHypothesis(opp) {
+  const A = opp.acquisition;
+  const R = opp.renovation;
+  const F = opp.financing;
+  const RT = opp.rental;
+  const P = opp.property;
+
+  const totalRent = P.units.reduce((s, u) => s + u.monthlyRent, 0);
+  const renovationBase = R.costPerSqm * P.totalSqm;
+  const monthly = mortgagePayment(A.purchasePrice + renovationBase * (1 + (R.contingenciesRate || 0)), F.interestRate, F.termYears);
+
+  return `
+    <h2>Hypothesis — ${opp.name}</h2>
+    <p class="muted">Inputs are edited in <code>data/${state.oppKey}.js</code> via Claude Code. This view is read-only.</p>
+
+    <div class="two-col">
+      <div class="col">
+        <h3>Property</h3>
+        <table class="kv">
+          <tbody>
+            ${hypRow("Typology", P.typology)}
+            ${hypRow("Total surface", `${fmtNum(P.totalSqm, 0)} m²`)}
+            ${P.units.map(u => hypRow(`${u.name}`, `${fmtNum(u.sqm, 0)} m² · ${fmtEUR(u.monthlyRent)}/mo`, { sub: true })).join("")}
+            ${hypRow("Total monthly rent", fmtEUR(totalRent), { derived: true })}
+            ${hypRow("Total annual rent", fmtEUR(totalRent * 12), { derived: true })}
+          </tbody>
+        </table>
+
+        <h3>Acquisition</h3>
+        <table class="kv">
+          <tbody>
+            ${hypRow("Purchase price", fmtEUR(A.purchasePrice))}
+            ${hypRow(`${A.landTaxRegime} (% of purchase price)`, fmtPct(A.landTaxRate, 0))}
+            ${hypRow("Notary",                                   A.notary != null ? fmtEUR(A.notary) : fmtPct(A.notaryRate, 1))}
+            ${hypRow("Agency commission",                        fmtPct(A.agencyCommissionRate || 0, 1))}
+          </tbody>
+        </table>
+
+        <h3>Renovation</h3>
+        <table class="kv">
+          <tbody>
+            ${hypRow("Cost per sqm",                             fmtEUR(R.costPerSqm))}
+            ${hypRow("Total surface × cost",                     fmtEUR(R.costPerSqm * P.totalSqm), { derived: true })}
+            ${hypRow(`Contingencies (${fmtPct(R.contingenciesRate, 0)})`, "—")}
+            ${hypRow("Estimated duration",                       `${R.durationMonths} months`)}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="col">
+        <h3>Bank financing</h3>
+        <table class="kv">
+          <tbody>
+            ${hypRow("Bank covers acquisition",                  F.bankCoversAcquisition ? "Yes" : "No")}
+            ${hypRow("Bank covers renovation",                   F.bankCoversRenovation  ? "Yes" : "No")}
+            ${hypRow("Interest rate",                            fmtPct(F.interestRate, 2))}
+            ${hypRow("Loan term",                                `${F.termYears} years`)}
+            ${hypRow("Amortization",                             F.amortizationStyle === "french" ? "French (constant payment)" : F.amortizationStyle)}
+            ${hypRow("Estimated monthly payment",                fmtEUR(monthly), { derived: true })}
+          </tbody>
+        </table>
+
+        <h3>Rental operating assumptions</h3>
+        <table class="kv">
+          <tbody>
+            ${hypRow("Inflation on rents & opex",                fmtPct(RT.inflationRate, 1))}
+            ${hypRow("Other income (% of rent, paid by tenant)", fmtPct(RT.otherIncomeRate || 0, 0))}
+            ${hypRow("Hold period",                              `${RT.holdYears} years`)}
+            ${hypRow("Vacancy schedule (Y1→Y" + RT.holdYears + ")", RT.vacancySchedule.slice(0, RT.holdYears).map(v => fmtPct(v, 0)).join(" · "))}
+            ${hypRow("Marketing (% of EGI)",                     fmtPct(RT.operatingExpenses.marketing, 0))}
+            ${hypRow("Salaries (% of EGI)",                      fmtPct(RT.operatingExpenses.salaries, 0))}
+            ${hypRow("Maintenance (% of EGI)",                   fmtPct(RT.operatingExpenses.maintenance, 0))}
+            ${hypRow("Management (% of EGI)",                    fmtPct(RT.operatingExpenses.management, 0))}
+            ${hypRow("IBI & insurance (% of EGI)",               fmtPct(RT.operatingExpenses.ibiInsurance, 0))}
+            ${hypRow("CapEx reserve (% of EGI)",                 fmtPct(RT.operatingExpenses.capex, 0))}
+          </tbody>
+        </table>
+
+        <h3>Exit assumptions</h3>
+        <table class="kv">
+          <tbody>
+            ${hypRow("Capital growth (per year)",                fmtPct(RT.capitalGrowthRate, 1))}
+            ${hypRow("Sale commission",                          fmtPct(RT.saleCommissionRate, 1))}
+            ${hypRow("Exit cap rate",                            fmtPct(RT.exitCapRate, 2))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3>Scenario assumptions</h3>
+    <table class="kv">
+      <thead>
+        <tr><th>Scenario</th><th class="num">Rent multiplier</th><th class="num">Vacancy adjust</th><th>Note</th></tr>
+      </thead>
+      <tbody>
+        ${["worst", "base", "best"].map(s => {
+          const sc = opp.scenarios[s] || {};
+          const adj = sc.vacancyAdjust || 0;
+          return `
+            <tr>
+              <td class="scen-${s}">${s[0].toUpperCase()}${s.slice(1)} case</td>
+              <td class="num">×${(sc.rentMultiplier || 1).toFixed(2)}</td>
+              <td class="num">${adj > 0 ? "+" : ""}${(adj * 100).toFixed(0)}%</td>
+              <td class="muted">${sc.note || "—"}</td>
+            </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderRentalCashFlow(opp) {
+  const r = compute(opp, state.scenario);
+  const years = r.cashFlows;
+  const yearCols = years.map(c => c.year);
+
+  const fmt = v => fmtEUR(v);
+  const fmtNeg = v => v < 0 ? `−${fmtEUR(-v)}` : fmt(v);
+
+  // Build table rows
+  function row(label, getter, opts = {}) {
+    const cls = opts.className || "";
+    const cells = years.map(y => `<td class="num">${opts.fmt ? opts.fmt(getter(y)) : fmt(getter(y))}</td>`).join("");
+    return `<tr class="${cls}"><td>${label}</td>${cells}</tr>`;
+  }
+
+  return `
+    <h2>Cash flow — ${opp.name} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
+
+    <div class="cashflow-summary">
+      <div class="cf-summary-item">
+        <div class="cf-summary-label">Total project cost</div>
+        <div class="cf-summary-value">${fmtEUR(r.totals.totalCost)}</div>
+      </div>
+      <div class="cf-summary-item">
+        <div class="cf-summary-label">Bank loan</div>
+        <div class="cf-summary-value">${fmtEUR(r.totals.loanAmount)}</div>
+      </div>
+      <div class="cf-summary-item highlight">
+        <div class="cf-summary-label">Sadala equity</div>
+        <div class="cf-summary-value">${fmtEUR(r.totals.equityRequired)}</div>
+      </div>
+      <div class="cf-summary-item">
+        <div class="cf-summary-label">Annual debt service</div>
+        <div class="cf-summary-value">${fmtEUR(r.debt.annualDebtService)}</div>
+      </div>
+    </div>
+
+    <h3>Operating cash flow</h3>
+    <table class="pnl cashflow-table">
+      <thead>
+        <tr>
+          <th></th>
+          ${yearCols.map(y => `<th class="num">Year ${y}</th>`).join("")}
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="section-header"><td colspan="${yearCols.length + 1}">Income</td></tr>
+        ${row("Potential gross income", c => c.grossPotential)}
+        <tr class="line-deduction">
+          <td><span class="triangle-spacer"></span> Vacancy</td>
+          ${years.map(c => `<td class="num">−${fmtEUR(c.vacancyLoss)} (${fmtPct(c.vacancy, 0)})</td>`).join("")}
+        </tr>
+        ${row("Effective gross income", c => c.effectiveGross, { className: "line-primary" })}
+
+        <tr class="section-spacer"><td colspan="${yearCols.length + 1}"></td></tr>
+
+        <tr class="section-header"><td colspan="${yearCols.length + 1}">Operating expenses</td></tr>
+        ${row("Marketing",     c => c.opex.marketing,    { className: "line-deduction" })}
+        ${row("Salaries",      c => c.opex.salaries,     { className: "line-deduction" })}
+        ${row("Maintenance",   c => c.opex.maintenance,  { className: "line-deduction" })}
+        ${row("Management",    c => c.opex.management,   { className: "line-deduction" })}
+        ${row("IBI & insurance", c => c.opex.ibiInsurance, { className: "line-deduction" })}
+        ${row("Total operating expenses", c => c.totalOpEx, { className: "line-primary subtle" })}
+
+        <tr class="section-spacer"><td colspan="${yearCols.length + 1}"></td></tr>
+
+        <tr class="line-primary pos">
+          <td>Net operating income (NOI)</td>
+          ${years.map(c => `<td class="num">${fmtEUR(c.noi)}</td>`).join("")}
+        </tr>
+        ${row("CapEx reserve", c => c.capex, { className: "line-deduction" })}
+        <tr class="line-primary pos">
+          <td>Cash flow from operations</td>
+          ${years.map(c => `<td class="num">${fmtEUR(c.cashFlowOps)}</td>`).join("")}
+        </tr>
+
+        <tr class="section-spacer"><td colspan="${yearCols.length + 1}"></td></tr>
+
+        <tr class="section-header waterfall-header"><td colspan="${yearCols.length + 1}">Debt service</td></tr>
+        ${row("Interest",       c => c.interest,  { className: "line-deduction" })}
+        ${row("Principal",      c => c.principal, { className: "line-deduction" })}
+        ${row("Outstanding debt (end of year)", c => c.outstandingDebt, { className: "line-deduction" })}
+
+        <tr class="section-spacer"><td colspan="${yearCols.length + 1}"></td></tr>
+
+        <tr class="line-primary pos eat-line">
+          <td>Cash flow to equity (after debt)</td>
+          ${years.map(c => `<td class="num">${fmtNeg(c.cashFlowAfterDebt)}</td>`).join("")}
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Exit (Year ${opp.rental.holdYears})</h3>
+    <table class="kv">
+      <tbody>
+        <tr><td>Residual value (NOI / cap rate)</td><td class="num">${fmtEUR(r.exit.residualValue)}</td></tr>
+        <tr class="line-deduction"><td>Sale commission (${fmtPct(opp.rental.saleCommissionRate, 0)})</td><td class="num">−${fmtEUR(r.exit.saleCommission)}</td></tr>
+        <tr><td>Sale proceeds</td><td class="num">${fmtEUR(r.exit.saleProceeds)}</td></tr>
+        <tr class="line-deduction"><td>Remaining debt</td><td class="num">−${fmtEUR(r.exit.remainingDebt)}</td></tr>
+        <tr class="hl"><td><strong>Net to equity at exit</strong></td><td class="num"><strong>${fmtEUR(r.exit.netToEquityAtExit)}</strong></td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function renderRentalInvestors(opp) {
+  const r = compute(opp, state.scenario);
+  const equity = r.totals.equityRequired;
+
+  const namedEquity = opp.investors.reduce((s, i) => s + (i.equity || 0), 0);
+  const investors = opp.investors.map(i => ({
+    ...i,
+    computedEquity: i.equity == null ? equity - namedEquity : i.equity,
+  }));
+
+  // Per-investor: their share of total levered cash flow over the hold + exit
+  const totalLeveredOut = r.cashflows.levered.slice(1).reduce((a, b) => a + b, 0);  // exclude initial outflow
+  const totalLeveredIn = -r.cashflows.levered[0];
+
+  return `
+    <h2>Investors — ${opp.name} <span class="scenario-tag scen-${state.scenario}">${state.scenario} case</span></h2>
+
+    <h3>Equity & returns</h3>
+    <table class="kv">
+      <tbody>
+        <tr><td>Equity invested (Year 0)</td><td class="num">${fmtEUR(totalLeveredIn)}</td></tr>
+        <tr><td>Total cash flow during hold (Y1–Y${opp.rental.holdYears})</td><td class="num">${fmtEUR(r.cashflows.levered.slice(1, -1).reduce((a, b) => a + b, 0) + r.cashflows.levered[r.cashflows.levered.length - 1] - r.exit.netToEquityAtExit)}</td></tr>
+        <tr><td>Net to equity at exit</td><td class="num">${fmtEUR(r.exit.netToEquityAtExit)}</td></tr>
+        <tr class="hl"><td><strong>Total equity return</strong></td><td class="num"><strong>${fmtEUR(totalLeveredOut)}</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h3>IRR &amp; multiples</h3>
+    <table class="kv">
+      <thead>
+        <tr><th></th><th class="num">Unlevered</th><th class="num">Levered</th></tr>
+      </thead>
+      <tbody>
+        <tr class="hl"><td><strong>IRR</strong></td><td class="num"><strong>${fmtPct(r.irr.unlevered)}</strong></td><td class="num"><strong>${fmtPct(r.irr.levered)}</strong></td></tr>
+        <tr><td>MOIC (Multiple on Invested Capital)</td><td class="num">${r.moic.unlevered ? r.moic.unlevered.toFixed(2) + "×" : "—"}</td><td class="num">${r.moic.levered ? r.moic.levered.toFixed(2) + "×" : "—"}</td></tr>
+        <tr><td>Year-1 net yield</td><td class="num">${fmtPct(r.yields.net)}</td><td class="num">—</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Cap table</h3>
+    <table class="kv">
+      <thead>
+        <tr><th>Investor</th><th class="num">Equity</th><th class="num">Profit share</th><th class="num">Estimated return</th></tr>
+      </thead>
+      <tbody>
+        ${investors.map(i => {
+          const myEquity = i.computedEquity;
+          const myReturn = i.profitShare * (totalLeveredOut + totalLeveredIn);  // their share of profits (return - principal)
+          // Better: their share of equity + their share of profits at exit
+          const myProfit = (totalLeveredOut - totalLeveredIn) * i.profitShare;
+          return `
+            <tr>
+              <td>${i.name}</td>
+              <td class="num">${fmtEUR(myEquity)}</td>
+              <td class="num">${fmtPct(i.profitShare, 1)}</td>
+              <td class="num">${fmtEUR(myEquity + myProfit)}</td>
+            </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+
+    <p class="muted" style="margin-top: 16px;">Note: returns assume a single sponsor (Sadala SL) for now since equity at risk is small and bank covers acquisition + renovation. Update <code>investors</code> in <code>data/${state.oppKey}.js</code> to bring co-investors in.</p>
   `;
 }
 
@@ -704,16 +1303,24 @@ function renderTab() {
   const main = document.getElementById("main");
   if (!opp) { main.innerHTML = "<p>No opportunity selected.</p>"; return; }
 
+  // Update the "P&L" / "Cash flow" tab label based on project type
+  const pnlBtn = document.querySelector('.tab-btn[data-tab="pnl"]');
+  if (pnlBtn) {
+    pnlBtn.textContent = opp.projectType === "rental" ? "Cash flow" : "P&L";
+  }
+
   if (opp.placeholder) {
     main.innerHTML = renderPlaceholder(opp);
     return;
   }
 
+  const isRental = opp.projectType === "rental";
+
   switch (state.tab) {
-    case "summary":     main.innerHTML = renderSummary(opp); break;
-    case "hypothesis":  main.innerHTML = renderHypothesis(opp); break;
-    case "pnl":         main.innerHTML = renderPnL(opp); break;
-    case "investors":   main.innerHTML = renderInvestors(opp); break;
+    case "summary":     main.innerHTML = isRental ? renderRentalSummary(opp)    : renderSummary(opp); break;
+    case "hypothesis":  main.innerHTML = isRental ? renderRentalHypothesis(opp) : renderHypothesis(opp); break;
+    case "pnl":         main.innerHTML = isRental ? renderRentalCashFlow(opp)   : renderPnL(opp); break;
+    case "investors":   main.innerHTML = isRental ? renderRentalInvestors(opp)  : renderInvestors(opp); break;
   }
 
   // Keep the global scenario picker in sync with current state

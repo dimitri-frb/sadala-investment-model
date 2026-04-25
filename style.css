@@ -351,6 +351,32 @@ td.scen-worst { color: #991b1b; font-weight: 500; }
 td.scen-base  { color: #1e40af; font-weight: 500; }
 td.scen-best  { color: #166534; font-weight: 500; }
 
+/* ===== Rental: cash flow summary cards ===== */
+.cashflow-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 18px 0 28px;
+}
+.cf-summary-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.cf-summary-item.highlight { background: #eff6ff; border-color: #bfdbfe; }
+.cf-summary-label { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.cf-summary-value { font-size: 18px; font-weight: 600; color: #1a1d24; font-variant-numeric: tabular-nums; }
+.cf-summary-item.highlight .cf-summary-value { color: #1e40af; }
+
+/* ===== Rental cashflow table (year columns) ===== */
+table.cashflow-table th, table.cashflow-table td { white-space: nowrap; }
+table.cashflow-table th.num { font-weight: 600; }
+
+/* ===== Yearly cash flow projection (development Investors) ===== */
+table.cashflow-projection tr.hl td { background: #eff6ff; font-weight: 600; }
+table.cashflow-projection tr.hl-soft td { background: #fafbfc; }
+
 /* ===== Profit distribution ===== */
 .distribution-section {
   margin-top: 36px;

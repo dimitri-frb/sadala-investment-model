@@ -88,9 +88,9 @@ window.OPPORTUNITIES["el-cantal"] = {
   },
 
   // ====== CAP TABLE ======
-  // Kakarot equity is derived (total equity invested − sum of others).
+  // Sadala equity is derived (total equity invested − sum of others).
   investors: [
-    { name: "Kakarot SL",                role: "sponsor",     equity: null,   profitShare: 0.57 },
+    { name: "Sadala SL",                role: "sponsor",     equity: null,   profitShare: 0.57 },
     { name: "Bingin SC",                 role: "investor",    equity: 450000, profitShare: 0.42 },
     { name: "Bingin SC (free shares)",   role: "free-shares", equity: 0,      profitShare: 0.005 },
     { name: "Lili One SC (free shares)", role: "free-shares", equity: 0,      profitShare: 0.005 },

@@ -4,7 +4,7 @@ window.OPPORTUNITY_ORDER = window.OPPORTUNITY_ORDER || [];
 window.OPPORTUNITY_ORDER.push("san-anton-50");
 
 window.OPPORTUNITIES["san-anton-50"] = {
-  name: "San Antón 50",
+  name: "Sosiego",
   address: "Buganvillas 14, 29018 Malaga",
   status: "Basic project approved",
 
@@ -88,10 +88,13 @@ window.OPPORTUNITIES["san-anton-50"] = {
   ],
 
   // ====== CAP TABLE ======
-  // 50/50 split between Kakarot SL and Inimex SL.
-  // Kakarot equity is derived (total equity invested − Inimex's contribution).
+  // 49.5 / 49.5 between Sadala SL and Inimex SL, plus 0.5% free shares each
+  // to Bingin SC and Lili One SC.
+  // Sadala equity is derived (total equity invested − others' contributions).
   investors: [
-    { name: "Kakarot SL", role: "sponsor",  equity: null,       profitShare: 0.50 },
-    { name: "Inimex SL",  role: "investor", equity: 587931.79,  profitShare: 0.50 },
+    { name: "Sadala SL",                 role: "sponsor",     equity: null,       profitShare: 0.495 },
+    { name: "Inimex SL",                 role: "investor",    equity: 587931.79,  profitShare: 0.495 },
+    { name: "Bingin SC (free shares)",   role: "free-shares", equity: 0,          profitShare: 0.005 },
+    { name: "Lili One SC (free shares)", role: "free-shares", equity: 0,          profitShare: 0.005 },
   ],
 };
