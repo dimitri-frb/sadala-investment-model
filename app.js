@@ -1353,9 +1353,22 @@ function renderRentalInvestors(opp) {
 // ===================================================================
 
 function renderBankDossier(opp) {
-  const worst = compute(opp, "worst");
-  const base  = compute(opp, "base");
-  const best  = compute(opp, "best");
+  // Bank dossier shows sale prices uplifted by +15% across all 3 scenarios
+  // (mid-market projection vs the internally-conservative baseline used in
+  // Summary / P&L / Cash flow). Costs and structure unchanged — only the
+  // top line moves, which mechanically lifts margin / ROE / IRR.
+  const DOSSIER_UPLIFT = 1.15;
+  const dossierOpp = {
+    ...opp,
+    scenarios: Object.fromEntries(
+      Object.entries(opp.scenarios || {}).map(([k, s]) => [
+        k, { ...s, salePricePerSqm: (s.salePricePerSqm || 0) * DOSSIER_UPLIFT }
+      ])
+    ),
+  };
+  const worst = compute(dossierOpp, "worst");
+  const base  = compute(dossierOpp, "base");
+  const best  = compute(dossierOpp, "best");
 
   const totalCost = base.totalCosts;
   const equityDeployed = base.returns.equityInvested;
@@ -1483,9 +1496,9 @@ function renderBankDossier(opp) {
             </thead>
             <tbody>
               <tr><td>Sale price (€/m²)</td>
-                <td class="num">${fmtEUR(opp.scenarios.worst.salePricePerSqm)}</td>
-                <td class="num ds-base-col">${fmtEUR(opp.scenarios.base.salePricePerSqm)}</td>
-                <td class="num">${fmtEUR(opp.scenarios.best.salePricePerSqm)}</td>
+                <td class="num">${fmtEUR(dossierOpp.scenarios.worst.salePricePerSqm)}</td>
+                <td class="num ds-base-col">${fmtEUR(dossierOpp.scenarios.base.salePricePerSqm)}</td>
+                <td class="num">${fmtEUR(dossierOpp.scenarios.best.salePricePerSqm)}</td>
               </tr>
               <tr><td>Total revenue</td>
                 <td class="num">${fmtEUR(worst.pnl.revenue)}</td>
