@@ -1562,16 +1562,20 @@ function renderTab() {
     b.classList.toggle("active", b.dataset.tab === state.tab));
 
   // Toggle chrome based on view mode.
-  // Portfolio (home) view: hide tabs, dropdown, scenario picker, back-link.
-  // Project view: show all of those, hide back-link only on portfolio.
+  // Tabs nav and back-link only shown in project view. Opp dropdown stays
+  // visible everywhere — user can navigate from anywhere.
   const tabsNav = document.querySelector("nav.tabs");
   if (tabsNav) tabsNav.style.display = isPortfolio ? "none" : "";
 
-  const oppPicker = document.querySelector(".opp-picker");
-  if (oppPicker) oppPicker.style.display = isPortfolio ? "none" : "";
-
   const backLink = document.getElementById("back-to-portfolio");
   if (backLink) backLink.style.display = isPortfolio ? "none" : "";
+
+  // Keep dropdown in sync with current state
+  const select = document.getElementById("opportunity-select");
+  if (select) {
+    const wantedValue = isPortfolio ? "" : (state.oppKey || "");
+    if (select.value !== wantedValue) select.value = wantedValue;
+  }
 
   const main = document.getElementById("main");
 
@@ -1637,13 +1641,26 @@ function init() {
   }
   state.scenario = ["worst", "base", "best"].includes(hashed.scenario) ? hashed.scenario : "base";
 
-  // Opportunity dropdown
+  // Opportunity dropdown — always visible. Top option = Portfolio (home).
   const select = document.getElementById("opportunity-select");
-  select.innerHTML = oppKeys.map(k =>
-    `<option value="${k}" ${k === state.oppKey ? "selected" : ""}>${window.OPPORTUNITIES[k].name}</option>`
-  ).join("");
+  select.innerHTML = `
+    <option value="">— Portfolio —</option>
+    ${oppKeys.map(k =>
+      `<option value="${k}" ${k === state.oppKey ? "selected" : ""}>${window.OPPORTUNITIES[k].name}</option>`
+    ).join("")}
+  `;
+  if (!state.oppKey) select.value = "";
   select.addEventListener("change", (e) => {
-    state.oppKey = e.target.value;
+    const v = e.target.value;
+    if (!v) {
+      // Selected "— Portfolio —" → go home
+      state.oppKey = null;
+      state.tab = "portfolio";
+    } else {
+      state.oppKey = v;
+      // If we were on portfolio, jump to that project's Summary
+      if (state.tab === "portfolio") state.tab = "summary";
+    }
     state.expanded = { land: false, hard: false, soft: false };
     renderTab();
   });
