@@ -91,10 +91,33 @@ window.OPPORTUNITIES["el-cantal"] = {
 
   // ====== CAP TABLE ======
   // Sadala equity is derived (total equity invested − sum of others).
+  // Each investor has a `capitalCalls` array describing when their equity is
+  // drawn down. Period format: "YYYY-S1" / "YYYY-S2" (semesters) or "YYYY-Q1"
+  // through "Q4" (quarters). Status: "paid" or "expected".
   investors: [
-    { name: "Sadala SL",                role: "sponsor",     equity: null,   profitShare: 0.57 },
-    { name: "Bingin SC",                 role: "investor",    equity: 450000, profitShare: 0.42 },
-    { name: "Bingin SC (free shares)",   role: "free-shares", equity: 0,      profitShare: 0.005 },
-    { name: "Lili One SC (free shares)", role: "free-shares", equity: 0,      profitShare: 0.005 },
+    {
+      name: "Sadala SL", role: "sponsor", equity: null, profitShare: 0.57,
+      capitalCalls: [
+        { period: "2025-S2", amount: 694209, status: "paid", note: "Land + ITP + notary + commission + setup" },
+      ],
+    },
+    {
+      name: "Bingin SC", role: "investor", equity: 450000, profitShare: 0.42,
+      capitalCalls: [
+        { period: "2026-S1", amount: 247419, status: "paid",     note: "Architecture + licence + PM" },
+        { period: "2026-S2", amount: 12766,  status: "paid",     note: "Project management" },
+        { period: "2027-S1", amount: 68613,  status: "expected", note: "Aparejador + PM" },
+        { period: "2027-S2", amount: 68613,  status: "expected", note: "Aparejador + PM" },
+        { period: "2028-S1", amount: 91119,  status: "expected", note: "Aparejador final + PM" },
+      ],
+    },
+    {
+      name: "Bingin SC (free shares)", role: "free-shares", equity: 0, profitShare: 0.005,
+      capitalCalls: [],
+    },
+    {
+      name: "Lili One SC (free shares)", role: "free-shares", equity: 0, profitShare: 0.005,
+      capitalCalls: [],
+    },
   ],
 };

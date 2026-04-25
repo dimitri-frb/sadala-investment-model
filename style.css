@@ -576,6 +576,61 @@ td.cf-pos-light {
 /* the per-cell coloring takes over. */
 tr.cf-row td:first-child { background: white; font-weight: 600; }
 
+/* ===== Capital contributions / Cash flow tab ===== */
+table.contrib-summary td,
+table.contrib-schedule td,
+table.contrib-detail td {
+  vertical-align: middle;
+}
+
+.contrib-bar {
+  position: relative;
+  height: 14px;
+  background: #eef0f4;
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 120px;
+}
+.contrib-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s;
+}
+.contrib-bar-fill.fully-paid { background: #10b981; }
+.contrib-bar-fill.partial    { background: #3b82f6; }
+.contrib-bar-fill.pending    { background: #d1d5db; }
+.contrib-bar-pct {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a1d24;
+  font-variant-numeric: tabular-nums;
+}
+
+.contrib-status {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.contrib-status.status-paid     { background: #dcfce7; color: #166534; }
+.contrib-status.status-expected { background: #fef3c7; color: #92400e; }
+
+table.contrib-schedule td .contrib-status {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  text-align: right;
+}
+
+table.contrib-summary tr.muted td { color: #9ca3af; }
+
 /* ===== Profit distribution ===== */
 .distribution-section {
   margin-top: 36px;

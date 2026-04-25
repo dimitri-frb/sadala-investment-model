@@ -1388,6 +1388,180 @@ function renderRentalInvestors(opp) {
 }
 
 // ===================================================================
+// ===== Capital calls / contributions tab ===========================
+// ===================================================================
+
+function fmtCallPeriod(p) {
+  if (!p) return "";
+  // "2025-S2" → "S2 2025" ; "2025-Q3" → "Q3 2025"
+  const m = p.match(/^(\d{4})-([SQ])(\d)$/);
+  return m ? `${m[2]}${m[3]} ${m[1]}` : p;
+}
+
+function collectCapitalCalls(opp) {
+  const rows = [];
+  for (const inv of opp.investors || []) {
+    for (const c of (inv.capitalCalls || [])) {
+      rows.push({ investor: inv.name, period: c.period, amount: c.amount, status: c.status, note: c.note || "" });
+    }
+  }
+  // Sort by period, then by investor for stable display
+  rows.sort((a, b) => a.period.localeCompare(b.period) || a.investor.localeCompare(b.investor));
+  return rows;
+}
+
+function computeContribSummary(opp) {
+  return (opp.investors || []).map(inv => {
+    const calls = inv.capitalCalls || [];
+    const committed = calls.reduce((s, c) => s + (c.amount || 0), 0);
+    const paid = calls.filter(c => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
+    const remaining = committed - paid;
+    return { ...inv, committed, paid, remaining, pctPaid: committed ? paid / committed : 0 };
+  });
+}
+
+function renderCapitalCalls(opp) {
+  const summary = computeContribSummary(opp);
+  const allCalls = collectCapitalCalls(opp);
+
+  // Aggregate by period for the schedule table
+  const byPeriod = {};
+  for (const c of allCalls) {
+    byPeriod[c.period] = byPeriod[c.period] || { period: c.period, total: 0, paid: 0, expected: 0 };
+    byPeriod[c.period].total += c.amount;
+    if (c.status === "paid") byPeriod[c.period].paid += c.amount;
+    else byPeriod[c.period].expected += c.amount;
+  }
+  const periodList = Object.values(byPeriod).sort((a, b) => a.period.localeCompare(b.period));
+
+  // Cumulative per period
+  let cum = 0;
+  for (const p of periodList) {
+    cum += p.total;
+    p.cumulative = cum;
+  }
+
+  const totalCommitted = summary.reduce((s, i) => s + i.committed, 0);
+  const totalPaid      = summary.reduce((s, i) => s + i.paid, 0);
+  const totalRemaining = summary.reduce((s, i) => s + i.remaining, 0);
+
+  const hasData = totalCommitted > 0;
+
+  if (!hasData) {
+    return `
+      <h2>Cash flow — ${opp.name}</h2>
+      <div class="placeholder-panel">
+        <div class="placeholder-icon">💸</div>
+        <h3>No capital calls defined yet</h3>
+        <p>To track investor contributions, add a <code>capitalCalls</code> array on each investor in <code>data/${state.oppKey}.js</code>.</p>
+        <p class="muted">Each entry: <code>{ period: "2026-S1", amount: 50000, status: "paid" | "expected", note: "..." }</code></p>
+      </div>
+    `;
+  }
+
+  return `
+    <h2>Cash flow — ${opp.name}</h2>
+    <p class="muted">When each investor contributes equity to the project. Status switches from <em>expected</em> to <em>paid</em> as the project progresses.</p>
+
+    <div class="cashflow-summary">
+      <div class="cf-summary-item"><div class="cf-summary-label">Total committed</div><div class="cf-summary-value">${fmtEUR(totalCommitted)}</div></div>
+      <div class="cf-summary-item highlight"><div class="cf-summary-label">Paid to date</div><div class="cf-summary-value">${fmtEUR(totalPaid)}</div></div>
+      <div class="cf-summary-item"><div class="cf-summary-label">Remaining</div><div class="cf-summary-value">${fmtEUR(totalRemaining)}</div></div>
+    </div>
+
+    <h3>By investor</h3>
+    <table class="kv contrib-summary">
+      <thead>
+        <tr>
+          <th>Investor</th>
+          <th class="num">Committed</th>
+          <th class="num">Paid</th>
+          <th class="num">Remaining</th>
+          <th>% Paid</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${summary.map(inv => {
+          if (inv.committed === 0) {
+            return `<tr class="muted">
+              <td>${inv.name}</td>
+              <td class="num">—</td>
+              <td class="num">—</td>
+              <td class="num">—</td>
+              <td><span class="muted">${inv.role === "free-shares" ? "free shares" : "no calls"}</span></td>
+            </tr>`;
+          }
+          const cls = inv.pctPaid >= 1 ? "fully-paid" : (inv.pctPaid > 0 ? "partial" : "pending");
+          return `<tr>
+            <td>${inv.name}</td>
+            <td class="num">${fmtEUR(inv.committed)}</td>
+            <td class="num cf-pos-light">${fmtEUR(inv.paid)}</td>
+            <td class="num ${inv.remaining > 0 ? "cf-neg-light" : ""}">${fmtEUR(inv.remaining)}</td>
+            <td>
+              <div class="contrib-bar">
+                <div class="contrib-bar-fill ${cls}" style="width:${(inv.pctPaid * 100).toFixed(1)}%"></div>
+                <span class="contrib-bar-pct">${fmtPct(inv.pctPaid, 0)}</span>
+              </div>
+            </td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+
+    <h3>Schedule by period</h3>
+    <table class="kv contrib-schedule">
+      <thead>
+        <tr>
+          <th>Period</th>
+          ${summary.filter(s => s.committed > 0).map(s => `<th class="num">${s.name}</th>`).join("")}
+          <th class="num">Total</th>
+          <th class="num">Cumulative</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${periodList.map(p => `
+          <tr>
+            <td><strong>${fmtCallPeriod(p.period)}</strong></td>
+            ${summary.filter(s => s.committed > 0).map(s => {
+              const call = (s.capitalCalls || []).find(c => c.period === p.period);
+              if (!call) return `<td class="num muted">—</td>`;
+              const cls = call.status === "paid" ? "cf-pos-light" : "cf-neg-light";
+              return `<td class="num ${cls}" title="${call.note || ""}">${fmtEUR(call.amount)}<div class="contrib-status status-${call.status}">${call.status}</div></td>`;
+            }).join("")}
+            <td class="num"><strong>${fmtEUR(p.total)}</strong></td>
+            <td class="num muted">${fmtEUR(p.cumulative)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+
+    <h3>Detail</h3>
+    <table class="kv contrib-detail">
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th>Investor</th>
+          <th class="num">Amount</th>
+          <th>Status</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${allCalls.map(c => `
+          <tr>
+            <td>${fmtCallPeriod(c.period)}</td>
+            <td>${c.investor}</td>
+            <td class="num">${fmtEUR(c.amount)}</td>
+            <td><span class="contrib-status status-${c.status}">${c.status}</span></td>
+            <td class="muted">${c.note}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+// ===================================================================
 // ===== Portfolio (kanban) renderer =================================
 // ===================================================================
 
@@ -1583,23 +1757,36 @@ function renderTab() {
   const opp = window.OPPORTUNITIES[state.oppKey];
   if (!opp) { main.innerHTML = "<p>No opportunity selected.</p>"; return; }
 
-  // Update the "P&L" / "Cash flow" tab label based on project type
+  const isRental = opp.projectType === "rental";
+
+  // Update the "P&L" / "Cash flow" tab label based on project type, and
+  // hide the new "cashflow" tab on rental (the P&L tab is already labeled
+  // "Cash flow" there — capital calls trivial since equity is upfront).
   const pnlBtn = document.querySelector('.tab-btn[data-tab="pnl"]');
   if (pnlBtn) {
-    pnlBtn.textContent = opp.projectType === "rental" ? "Cash flow" : "P&L";
+    pnlBtn.textContent = isRental ? "Cash flow" : "P&L";
   }
+  const cashflowBtn = document.querySelector('.tab-btn[data-tab="cashflow"]');
+  if (cashflowBtn) cashflowBtn.style.display = isRental ? "none" : "";
 
   if (opp.placeholder) {
     main.innerHTML = renderPlaceholder(opp);
     return;
   }
 
-  const isRental = opp.projectType === "rental";
+  // If user lands on cashflow tab while on a rental opp, redirect to pnl
+  // (which IS the cashflow for rental projects).
+  if (state.tab === "cashflow" && isRental) {
+    state.tab = "pnl";
+    document.querySelectorAll(".tab-btn").forEach(b =>
+      b.classList.toggle("active", b.dataset.tab === state.tab));
+  }
 
   switch (state.tab) {
     case "summary":     main.innerHTML = isRental ? renderRentalSummary(opp)    : renderSummary(opp); break;
     case "hypothesis":  main.innerHTML = isRental ? renderRentalHypothesis(opp) : renderHypothesis(opp); break;
     case "pnl":         main.innerHTML = isRental ? renderRentalCashFlow(opp)   : renderPnL(opp); break;
+    case "cashflow":    main.innerHTML = renderCapitalCalls(opp); break;
     case "investors":   main.innerHTML = isRental ? renderRentalInvestors(opp)  : renderInvestors(opp); break;
   }
 
@@ -1630,7 +1817,7 @@ function init() {
   const hashed = readHash();
   if (hashed.opp && window.OPPORTUNITIES[hashed.opp]) {
     state.oppKey = hashed.opp;
-    state.tab    = ["summary", "hypothesis", "pnl", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
+    state.tab    = ["summary", "hypothesis", "pnl", "cashflow", "investors"].includes(hashed.tab) ? hashed.tab : "summary";
   } else {
     state.oppKey = null;
     state.tab    = "portfolio";
@@ -1683,7 +1870,7 @@ function init() {
     if (h.opp && window.OPPORTUNITIES[h.opp]) {
       // Project view
       state.oppKey = h.opp;
-      state.tab    = ["summary","hypothesis","pnl","investors"].includes(h.tab) ? h.tab : "summary";
+      state.tab    = ["summary","hypothesis","pnl","cashflow","investors"].includes(h.tab) ? h.tab : "summary";
     } else {
       // Portfolio (home) view
       state.oppKey = null;
