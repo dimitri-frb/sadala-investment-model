@@ -325,7 +325,7 @@ function computeDevelopment(opp, scenarioKey) {
       irrBase, irrDelayed, irrDelayed24,
     },
     phasedCashflow: buildDevPhasedCashflow({
-      acquisitionTotal: landTotal,
+      acquisitionTotal,
       setupCost,
       softCost,
       contingencies,
