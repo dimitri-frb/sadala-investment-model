@@ -1,4 +1,4 @@
-// Stradivarius — 3 parcelas in Pinares, 2 luxury villas (~500 sqm each).
+// Atalaya — 3 parcelas in Pinares de San Antón, 2 luxury villas (~500 sqm each).
 // Inputs estimated from El Cantal & Sosiego scaled for the Pinares premium
 // market and the larger built area.
 //   Worst: ~€6.5M revenue · Base: ~€8.7M · Best: ~€9.5M
@@ -9,8 +9,8 @@ window.OPPORTUNITY_ORDER = window.OPPORTUNITY_ORDER || [];
 window.OPPORTUNITY_ORDER.push("stradivarius-30");
 
 window.OPPORTUNITIES["stradivarius-30"] = {
-  name: "Stradivarius 30",
-  address: "Pinares de San Antón, Málaga",
+  name: "Atalaya",
+  address: "Calle Stradivarius 11-13, Pinares de San Antón, Málaga",
   status: "Offer accepted",
   stage: "offer-sent",
   dealType: "buy-to-sell",
