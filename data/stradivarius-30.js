@@ -1,8 +1,8 @@
 // Stradivarius — 3 parcelas in Pinares, 2 luxury villas (~500 sqm each).
 // Inputs estimated from El Cantal & Sosiego scaled for the Pinares premium
-// market and the larger built area. Sale prices benchmarked against Coral
-// Shield Asset Management's external scenario analysis (Apr 2026):
+// market and the larger built area.
 //   Worst: ~€6.5M revenue · Base: ~€8.7M · Best: ~€9.5M
+// Costs held constant across scenarios — only the top line varies.
 // All numbers are PRELIMINARY — adjust as more data lands.
 window.OPPORTUNITIES = window.OPPORTUNITIES || {};
 window.OPPORTUNITY_ORDER = window.OPPORTUNITY_ORDER || [];
@@ -66,8 +66,8 @@ window.OPPORTUNITIES["stradivarius-30"] = {
   taxRate: 0.25,
 
   // ====== TIMING ======
-  // 5-year horizon (matches Coral Shield's analysis): permit + execution +
-  // construction (~24mo for 2 villas) + sale process buffer.
+  // 5-year horizon: permit + execution + construction (~24mo for 2 villas)
+  // + sale process buffer.
   projectDurationMonths: 60,
 
   // ====== TIMELINE ======
@@ -83,17 +83,14 @@ window.OPPORTUNITIES["stradivarius-30"] = {
   ],
 
   // ====== SCENARIO ASSUMPTIONS ======
-  // Calibrated to Coral Shield Asset Management's D4.3 scenario analysis
-  // (without presales) dated Apr 2026:
-  //   Worst (Desfavorable): revenue €6.47M
-  //   Base  (CORALshield):  revenue €8.72M (75% of historical 5-yr growth)
-  //   Best  (Optimista):    revenue €9.47M (100% of historical growth)
-  // Coral Shield treats costs as roughly constant across scenarios (~€5.0M)
-  // — variation is concentrated on revenue. PEM held flat at €2,900/m².
+  // Costs are held constant across scenarios (PEM €2,900/m²) — only the
+  // sale €/m² varies. Worst = today's market with no further price growth;
+  // Base = ~75% of historical 5-yr price growth; Best = full historical
+  // growth + premium finishes.
   scenarios: {
-    worst: { salePricePerSqm: 6500, pemPerSqm: 2900, note: "Today's market + cost escalation (Coral Shield Desfavorable)" },
-    base:  { salePricePerSqm: 8700, pemPerSqm: 2900, note: "75% of historical 5-yr price growth (Coral Shield base)"      },
-    best:  { salePricePerSqm: 9500, pemPerSqm: 2900, note: "100% historical growth + premium finish (Coral Shield Optimista)" },
+    worst: { salePricePerSqm: 6500, pemPerSqm: 2900, note: "Today's market, no price growth" },
+    base:  { salePricePerSqm: 8700, pemPerSqm: 2900, note: "Mid-market — partial historical price growth" },
+    best:  { salePricePerSqm: 9500, pemPerSqm: 2900, note: "Full historical growth + premium finishes" },
   },
 
   // ====== CAP TABLE ======
