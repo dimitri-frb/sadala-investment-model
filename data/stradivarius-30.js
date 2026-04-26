@@ -83,12 +83,17 @@ window.OPPORTUNITIES["stradivarius-30"] = {
   ],
 
   // ====== SCENARIO ASSUMPTIONS ======
-  // Sale €/sqm calibrated to hit Coral Shield's Worst/Base/Optimista revenue
-  // (€6.5M / €8.7M / €9.5M at 1,000 m² built). PEM ~3,000 €/m² (luxury).
+  // Calibrated to Coral Shield Asset Management's D4.3 scenario analysis
+  // (without presales) dated Apr 2026:
+  //   Worst (Desfavorable): revenue €6.47M
+  //   Base  (CORALshield):  revenue €8.72M (75% of historical 5-yr growth)
+  //   Best  (Optimista):    revenue €9.47M (100% of historical growth)
+  // Coral Shield treats costs as roughly constant across scenarios (~€5.0M)
+  // — variation is concentrated on revenue. PEM held flat at €2,900/m².
   scenarios: {
-    worst: { salePricePerSqm: 6500, pemPerSqm: 3200, note: "Cost overrun + flat market" },
-    base:  { salePricePerSqm: 8700, pemPerSqm: 3000, note: "Coral Shield base — historical price growth"  },
-    best:  { salePricePerSqm: 9500, pemPerSqm: 2900, note: "Premium achieved + optimised costs"            },
+    worst: { salePricePerSqm: 6500, pemPerSqm: 2900, note: "Today's market + cost escalation (Coral Shield Desfavorable)" },
+    base:  { salePricePerSqm: 8700, pemPerSqm: 2900, note: "75% of historical 5-yr price growth (Coral Shield base)"      },
+    best:  { salePricePerSqm: 9500, pemPerSqm: 2900, note: "100% historical growth + premium finish (Coral Shield Optimista)" },
   },
 
   // ====== CAP TABLE ======
