@@ -300,6 +300,15 @@ function computeDevelopment(opp, scenarioKey) {
   const irrDelayed = irrLumpSum(equityInvested, equityReturn, durationMonths + 12);
   const irrDelayed24 = irrLumpSum(equityInvested, equityReturn, durationMonths + 24);
 
+  // Pre-tax / pre-financing IRR — uses gross profit (Revenue − Costs) as
+  // the equity return, no deductions for commercialization, financing, or
+  // tax. Matches the methodology used by external advisors (Coral Shield)
+  // who report numbers on this basis. Always >= the Net IRR above.
+  const grossProfit = revenue - totalCosts;
+  const equityReturnPreTax = equityInvested + grossProfit;
+  const irrPreTax = irrLumpSum(equityInvested, equityReturnPreTax, durationMonths);
+  const irrPreTaxDelayed = irrLumpSum(equityInvested, equityReturnPreTax, durationMonths + 12);
+
   return {
     builtTotal, edificableTotal,
     revenue, pricePerSqm: s.salePricePerSqm,
@@ -323,6 +332,7 @@ function computeDevelopment(opp, scenarioKey) {
       equityInvested, netProfit, roe, rentabilidad,
       equityReturn, durationMonths,
       irrBase, irrDelayed, irrDelayed24,
+      irrPreTax, irrPreTaxDelayed, grossProfit,
     },
     phasedCashflow: buildDevPhasedCashflow({
       acquisitionTotal,
@@ -1530,7 +1540,12 @@ function renderBankDossier(opp) {
                 <td class="num ds-base-col">${fmtPct(base.returns.roe)}</td>
                 <td class="num">${fmtPct(best.returns.roe)}</td>
               </tr>
-              <tr><td>IRR (${base.returns.durationMonths} months)</td>
+              <tr><td>IRR pre-tax (${base.returns.durationMonths} months)</td>
+                <td class="num">${fmtPct(worst.returns.irrPreTax)}</td>
+                <td class="num ds-base-col">${fmtPct(base.returns.irrPreTax)}</td>
+                <td class="num">${fmtPct(best.returns.irrPreTax)}</td>
+              </tr>
+              <tr><td>Net IRR — post-tax, post-financing (${base.returns.durationMonths} months)</td>
                 <td class="num">${fmtPct(worst.returns.irrBase)}</td>
                 <td class="num ds-base-col">${fmtPct(base.returns.irrBase)}</td>
                 <td class="num">${fmtPct(best.returns.irrBase)}</td>
