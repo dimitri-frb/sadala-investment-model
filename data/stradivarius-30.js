@@ -66,9 +66,9 @@ window.OPPORTUNITIES["stradivarius-30"] = {
   taxRate: 0.25,
 
   // ====== TIMING ======
-  // 5-year horizon: permit + execution + construction (~24mo for 2 villas)
-  // + sale process buffer.
-  projectDurationMonths: 60,
+  // Base 48 months: permit + execution + construction (~24mo for 2 villas)
+  // + sale process. The +12mo delay scenario lands at 60 months.
+  projectDurationMonths: 48,
 
   // ====== TIMELINE ======
   // Estimated dates — anchor on a Q3 2026 signing target.
