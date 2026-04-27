@@ -14,20 +14,25 @@ window.OPPORTUNITIES["bolivia"] = {
   dealType: "buy-to-rent",
 
   // ====== PROPERTY ======
-  // Old fisherman's house split into 6 studios (~30 m² each) for
-  // short-term Airbnb operation. Total ~183 m² (180 m² studios + 3 m²
-  // circulation/stairs).
+  // Old fisherman's house split into 6 studios (~30 m² each). Hybrid rental:
+  //   - Long-term (Oct–Jun, 9 mo): €800/mo per studio × 85% occupancy
+  //   - Short-term (Jul–Sep, 3 mo): €200/night × 70% occupancy
+  // Per studio: €6,120 LT + €12,600 ST = €18,720/yr
+  // 6 studios: €112,320/yr blended revenue.
   property: {
-    typology: "Casa de pescadores → 6 studios (short-term rental)",
+    typology: "Casa de pescadores → 6 studios (hybrid rental)",
     totalSqm: 183,
-    units: [
-      { name: "Studio 1", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
-      { name: "Studio 2", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
-      { name: "Studio 3", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
-      { name: "Studio 4", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
-      { name: "Studio 5", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
-      { name: "Studio 6", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
-    ],
+    units: (() => {
+      const seasons = [
+        { label: "Long-term (Oct–Jun)",  months: 9, monthlyRent: 800,  occupancyRate: 0.85, commissionRate: 0.05, note: "Local management 5%" },
+        { label: "Short-term (Jul–Sep)", months: 3, nightlyRate: 200,                       occupancyRate: 0.70, commissionRate: 0.38, note: "Property mgmt 20% + Airbnb 18%" },
+      ];
+      return Array.from({ length: 6 }, (_, i) => ({
+        name: `Studio ${i + 1}`,
+        sqm: 30,
+        seasons,
+      }));
+    })(),
   },
 
   // ====== ACQUISITION ======
@@ -73,11 +78,12 @@ window.OPPORTUNITIES["bolivia"] = {
     otherIncomeRate: 0,            // short-term: cleaning fees pass through, no extra income
     vacancySchedule: [0, 0, 0, 0, 0, 0],
     operatingExpenses: {
-      maintenance:        0.06,
-      ibiInsurance:       0.10,
-      utilities:          0.05,    // landlord pays utilities for short-term guests
-      propertyManagement: 0.20,    // local manager (cleaning, check-in, ops)
-      airbnbFee:          0.18,    // platform commission (host + guest split combined)
+      maintenance:  0.06,
+      ibiInsurance: 0.10,
+      utilities:    0.05,
+      // Rental commissions are derived from each unit's seasons
+      // (commissionRate per season, weighted by season revenue) and
+      // injected as a synthetic OpEx line by the engine.
     },
     capexRate: 0.01,
     holdYears: 5,

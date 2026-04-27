@@ -121,16 +121,35 @@ function computeRental(opp, scenarioKey) {
   const amort = amortizationByYear(loanAmount, F.interestRate, F.termYears, RT.holdYears);
 
   // --- Yearly cash flows ---
-  // Each unit can specify either an explicit monthlyRent (long-term lease)
-  // or a nightlyRate + occupancyRate (short-term / Airbnb). Compute the
-  // annual rent accordingly.
-  const baseAnnualRent = opp.property.units.reduce((sum, u) => {
-    if (u.monthlyRent != null) return sum + u.monthlyRent * 12;
-    if (u.nightlyRate != null && u.occupancyRate != null) {
-      return sum + u.nightlyRate * 365 * u.occupancyRate;
+  // Each unit can specify either:
+  //  - explicit monthlyRent (long-term lease)
+  //  - nightlyRate + occupancyRate (single-mode short-term / Airbnb)
+  //  - seasons[]: array of seasonal modes (hybrid rental — different rates
+  //    and commissions across the year)
+  // Compute annual rent accordingly.
+  const seasonAnnualRevenue = (s) => {
+    if (s.monthlyRent != null) return s.monthlyRent * (s.months || 12) * (s.occupancyRate || 1);
+    if (s.nightlyRate != null) return s.nightlyRate * 30 * (s.months || 12) * (s.occupancyRate || 1);
+    return 0;
+  };
+  const unitAnnualRent = (u) => {
+    if (u.seasons) return u.seasons.reduce((sum, s) => sum + seasonAnnualRevenue(s), 0);
+    if (u.monthlyRent != null) return u.monthlyRent * 12;
+    if (u.nightlyRate != null && u.occupancyRate != null) return u.nightlyRate * 365 * u.occupancyRate;
+    return 0;
+  };
+  const baseAnnualRent = opp.property.units.reduce((sum, u) => sum + unitAnnualRent(u), 0);
+
+  // Derive blended commission rate from any seasonal commissions on units.
+  // Weighted by each season's annual revenue across all units.
+  let totalSeasonalCommission = 0;
+  for (const u of opp.property.units) {
+    if (!u.seasons) continue;
+    for (const s of u.seasons) {
+      totalSeasonalCommission += seasonAnnualRevenue(s) * (s.commissionRate || 0);
     }
-    return sum;
-  }, 0);
+  }
+  const seasonalCommissionRate = baseAnnualRent > 0 ? totalSeasonalCommission / baseAnnualRent : 0;
   const adjustedBaseRent = baseAnnualRent * (s.rentMultiplier || 1);
 
   const cashFlows = [];
@@ -149,10 +168,13 @@ function computeRental(opp, scenarioKey) {
     // OpEx and CapEx are computed on POTENTIAL gross income (PGI), not EGI —
     // operating costs don't disappear when a unit is vacant.
     // OpEx keys are data-driven: whatever's in `RT.operatingExpenses` gets included.
-    // CapEx is a top-level capexRate (or operatingExpenses.capex for legacy).
+    // Plus: if the units have seasonal commissions, inject a derived
+    // "seasonalCommissions" line representing the blended rate.
     const opex = {};
     let totalOpEx = 0;
-    for (const [key, rate] of Object.entries(RT.operatingExpenses || {})) {
+    const oxRates = { ...(RT.operatingExpenses || {}) };
+    if (seasonalCommissionRate > 0) oxRates.seasonalCommissions = seasonalCommissionRate;
+    for (const [key, rate] of Object.entries(oxRates)) {
       if (key === "capex") continue;  // legacy: capex used to live here
       const v = grossPotential * (rate || 0);
       opex[key] = v;
@@ -1019,6 +1041,7 @@ const OPEX_LABELS = {
   agency:             "Agency commission",
   rentalCommissions:  "Rental commissions",
   airbnbFee:          "Airbnb platform fee",
+  seasonalCommissions: "Rental commissions (seasonal blend)",
 };
 function opexLabel(key) {
   return OPEX_LABELS[key] || (key.charAt(0).toUpperCase() + key.slice(1));
@@ -1088,15 +1111,20 @@ function renderRentalHypothesis(opp) {
   const RT = opp.rental;
   const P = opp.property;
 
-  // Effective monthly rent per unit (handles both monthlyRent and
-  // nightlyRate × occupancyRate forms).
-  const unitMonthlyRent = (u) => {
-    if (u.monthlyRent != null) return u.monthlyRent;
-    if (u.nightlyRate != null && u.occupancyRate != null) {
-      return u.nightlyRate * (365 / 12) * u.occupancyRate;
-    }
+  // Effective annual rent per unit — handles monthlyRent, nightlyRate ×
+  // occupancyRate, OR seasons[] (hybrid rentals).
+  const seasonAnnualRev = (s) => {
+    if (s.monthlyRent != null) return s.monthlyRent * (s.months || 12) * (s.occupancyRate || 1);
+    if (s.nightlyRate != null) return s.nightlyRate * 30 * (s.months || 12) * (s.occupancyRate || 1);
     return 0;
   };
+  const unitAnnualRent = (u) => {
+    if (u.seasons) return u.seasons.reduce((sum, s) => sum + seasonAnnualRev(s), 0);
+    if (u.monthlyRent != null) return u.monthlyRent * 12;
+    if (u.nightlyRate != null && u.occupancyRate != null) return u.nightlyRate * 365 * u.occupancyRate;
+    return 0;
+  };
+  const unitMonthlyRent = (u) => unitAnnualRent(u) / 12;
   const totalRent = P.units.reduce((s, u) => s + unitMonthlyRent(u), 0);
   const renovationBase = R.costPerSqm * P.totalSqm;
   const renovationConstruction = renovationBase * (1 + (R.contingenciesRate || 0));
@@ -1117,9 +1145,22 @@ function renderRentalHypothesis(opp) {
             ${hypRow("Typology", P.typology)}
             ${hypRow("Total surface", `${fmtNum(P.totalSqm, 0)} m²`)}
             ${P.units.map(u => {
-              const desc = u.nightlyRate != null
-                ? `${fmtNum(u.sqm, 0)} m² · ${fmtEUR(u.nightlyRate)}/night × ${fmtPct(u.occupancyRate, 0)} occ. = ${fmtEUR(unitMonthlyRent(u))}/mo`
-                : `${fmtNum(u.sqm, 0)} m² · ${fmtEUR(u.monthlyRent)}/mo`;
+              let desc;
+              if (u.seasons) {
+                const lines = u.seasons.map(s => {
+                  const months = s.months || 12;
+                  const rev = seasonAnnualRev(s);
+                  const rate = s.monthlyRent != null
+                    ? `${fmtEUR(s.monthlyRent)}/mo × ${fmtPct(s.occupancyRate, 0)} × ${months} mo`
+                    : `${fmtEUR(s.nightlyRate)}/night × ${fmtPct(s.occupancyRate, 0)} × ${months} mo`;
+                  return `${s.label}: ${rate} = ${fmtEUR(rev)}/yr (${fmtPct(s.commissionRate || 0, 0)} comm.)`;
+                });
+                desc = `${fmtNum(u.sqm, 0)} m² — ${fmtEUR(unitAnnualRent(u))}/yr blended<br/><small class="muted">${lines.join("<br/>")}</small>`;
+              } else if (u.nightlyRate != null) {
+                desc = `${fmtNum(u.sqm, 0)} m² · ${fmtEUR(u.nightlyRate)}/night × ${fmtPct(u.occupancyRate, 0)} occ. = ${fmtEUR(unitMonthlyRent(u))}/mo`;
+              } else {
+                desc = `${fmtNum(u.sqm, 0)} m² · ${fmtEUR(u.monthlyRent)}/mo`;
+              }
               return hypRow(u.name, desc, { sub: true });
             }).join("")}
             ${hypRow("Total monthly rent", fmtEUR(totalRent), { derived: true })}
