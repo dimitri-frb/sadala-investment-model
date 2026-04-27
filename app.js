@@ -1454,6 +1454,13 @@ function renderBankDossier(opp) {
   const ltcRatio = loanAsk / totalCost;
   const equityCoveragePct = equityDeployed / totalCost;
 
+  // Bank-friendly coverage metrics
+  const baseRevenue = base.pnl.revenue;
+  const ltgdvRatio = loanAsk / baseRevenue;       // loan-to-gross-development-value
+  const eatCoverage = base.pnl.eat / loanAsk;     // bank wants > 1.0
+  const ebitdaCoverage = base.pnl.ebitda / loanAsk;
+  const equityToLoanRatio = equityDeployed / loanAsk;
+
   const builtTotal = opp.property.sobreRasante + opp.property.bajoRasante + (opp.property.terrazas || 0);
   const today = new Date();
   const fmtToday = `${today.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`;
@@ -1465,6 +1472,45 @@ function renderBankDossier(opp) {
     const eq = i.equity != null ? i.equity : (equityDeployed - namedEquity);
     return { name: i.name, equity: eq, share: eq / equityDeployed };
   });
+
+  // Drawdown schedule — typical Spanish promoter loan tied to construction
+  // milestones, certified by the aparejador. Tranches sum to 100% of loan.
+  const drawdownTranches = [
+    { milestone: "Construction start (signing of works contract)", pct: 0.10 },
+    { milestone: "25% construction complete (certified)",          pct: 0.20 },
+    { milestone: "50% construction complete (certified)",          pct: 0.25 },
+    { milestone: "75% construction complete (certified)",          pct: 0.20 },
+    { milestone: "Structure topped out + roof complete",           pct: 0.15 },
+    { milestone: "Delivery (cédula de habitabilidad)",             pct: 0.10 },
+  ];
+
+  // Risk mitigants — partly data-driven from project state
+  const mitigants = [];
+  if ((opp.status || "").toLowerCase().includes("approved")) {
+    mitigants.push("Basic Project already <strong>approved</strong> — permitting risk substantially de-risked");
+  } else if ((opp.status || "").toLowerCase().includes("submitted")) {
+    mitigants.push("Basic Project submitted — permitting in active review");
+  }
+  if (equityCoveragePct >= 0.30) {
+    mitigants.push(`Sponsor equity <strong>${fmtEUR(equityDeployed)}</strong> already deployed (${fmtPct(equityCoveragePct, 0)} of total cost) — meaningful skin in the game`);
+  }
+  // Building-company partner detection
+  const buildingPartner = (opp.investors || []).find(i =>
+    /building|construc|inimex/i.test((i.name || "")) && i.role !== "sponsor" && (i.equity || 0) > 0
+  );
+  if (buildingPartner) {
+    mitigants.push(`Co-investor <strong>${buildingPartner.name}</strong> (${fmtPct(buildingPartner.profitShare, 1)} stake) is an established building company — execution risk reduced`);
+  }
+  mitigants.push("Bank loan secured by <strong>1st-rank hipoteca</strong> on the asset");
+  mitigants.push("Drawdown tied to milestone certification by the aparejador — bank funds only released against verified progress");
+  mitigants.push("<strong>Bullet repayment</strong> from sale proceeds at exit — no cash-flow burden during construction");
+
+  // Track record — auto-reference other dev opportunities
+  const trackRecordEntries = (window.OPPORTUNITY_ORDER || Object.keys(window.OPPORTUNITIES))
+    .filter(k => k !== state.oppKey)
+    .map(k => window.OPPORTUNITIES[k])
+    .filter(o => o && o.projectType !== "rental" && !o.placeholder)
+    .slice(0, 3);
 
   // Timeline highlights (only milestones that are still future or current)
   const timeline = (opp.timeline || []).map(t => {
@@ -1528,6 +1574,37 @@ function renderBankDossier(opp) {
               <div class="ds-stat-label">Expected exit</div>
               <div class="ds-stat-value">${fmtEUR(base.pnl.revenue)}</div>
               <div class="ds-stat-sub">Base case sale price</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="ds-block ds-block-wide">
+          <h2>Bank coverage metrics (base case)</h2>
+          <div class="ds-coverage-grid">
+            <div class="ds-cov">
+              <div class="ds-cov-label">LTC</div>
+              <div class="ds-cov-value">${fmtPct(ltcRatio, 0)}</div>
+              <div class="ds-cov-sub">Loan ÷ total project cost</div>
+            </div>
+            <div class="ds-cov">
+              <div class="ds-cov-label">LTGDV</div>
+              <div class="ds-cov-value">${fmtPct(ltgdvRatio, 0)}</div>
+              <div class="ds-cov-sub">Loan ÷ gross development value</div>
+            </div>
+            <div class="ds-cov">
+              <div class="ds-cov-label">EBITDA / Loan</div>
+              <div class="ds-cov-value">${ebitdaCoverage.toFixed(2)}×</div>
+              <div class="ds-cov-sub">Project earnings cover the loan ${ebitdaCoverage.toFixed(2)} times</div>
+            </div>
+            <div class="ds-cov">
+              <div class="ds-cov-label">Net profit / Loan</div>
+              <div class="ds-cov-value">${eatCoverage.toFixed(2)}×</div>
+              <div class="ds-cov-sub">After-tax profit covers the loan ${eatCoverage.toFixed(2)} times</div>
+            </div>
+            <div class="ds-cov">
+              <div class="ds-cov-label">Equity / Loan</div>
+              <div class="ds-cov-value">${equityToLoanRatio.toFixed(2)}×</div>
+              <div class="ds-cov-sub">Sponsor capital relative to bank capital</div>
             </div>
           </div>
         </section>
@@ -1692,6 +1769,64 @@ function renderBankDossier(opp) {
               <span class="ds-cost-pct"><strong>100%</strong></span>
             </div>
           </div>
+        </section>
+
+        <section class="ds-block ds-block-wide">
+          <h2>Proposed drawdown schedule</h2>
+          <p class="ds-note" style="margin-bottom: 10px;">Tranches drawn against milestones certified by the aparejador (project's technical director). Sums to 100% of the loan.</p>
+          <table class="ds-financials">
+            <thead>
+              <tr>
+                <th>Milestone</th>
+                <th class="num">Tranche</th>
+                <th class="num">Amount</th>
+                <th class="num">Cumulative</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(() => {
+                let cum = 0;
+                return drawdownTranches.map(t => {
+                  cum += t.pct;
+                  return `<tr>
+                    <td>${t.milestone}</td>
+                    <td class="num">${fmtPct(t.pct, 0)}</td>
+                    <td class="num">${fmtEUR(t.pct * loanAsk)}</td>
+                    <td class="num">${fmtEUR(cum * loanAsk)}</td>
+                  </tr>`;
+                }).join("");
+              })()}
+            </tbody>
+          </table>
+        </section>
+
+        <section class="dossier-grid">
+          <div class="ds-block">
+            <h2>Risk mitigants</h2>
+            <ul class="ds-mitigants">
+              ${mitigants.map(m => `<li>${m}</li>`).join("")}
+            </ul>
+          </div>
+
+          ${trackRecordEntries.length > 0 ? `
+            <div class="ds-block">
+              <h2>Sponsor track record</h2>
+              <p style="font-size: 12.5px; line-height: 1.5; margin: 0 0 8px;">
+                <strong>Sadala SL</strong> is currently developing
+                ${trackRecordEntries.length === 1 ? "1 parallel project" : `${trackRecordEntries.length} parallel projects`}
+                in the Málaga area:
+              </p>
+              <ul class="ds-mitigants">
+                ${trackRecordEntries.map(o => `
+                  <li>
+                    <strong>${o.name}</strong> — ${o.address || "Málaga"}
+                    <br/><small style="color: #6b7280;">Status: ${o.status || "—"} · ${o.property?.tipologia || "Residential development"}</small>
+                  </li>
+                `).join("")}
+              </ul>
+              <p class="ds-note" style="margin-top: 10px;">Same sponsor team, architects, and aparejador across projects. Existing banking relationships available for verification.</p>
+            </div>
+          ` : ""}
         </section>
 
         <footer class="dossier-footer">
