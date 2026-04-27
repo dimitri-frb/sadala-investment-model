@@ -1531,7 +1531,7 @@ function renderBankDossier(opp) {
             <img src="logo.png" alt="Sadala" class="dossier-logo" />
             <div>
               <div class="dossier-brand-name">Sadala</div>
-              <div class="dossier-brand-tagline">Real Estate Development</div>
+              <div class="dossier-brand-tagline">Builders of the Unique</div>
             </div>
           </div>
           <div class="dossier-title">
@@ -1831,7 +1831,7 @@ function renderBankDossier(opp) {
 
         <footer class="dossier-footer">
           <div>
-            <strong>Sadala SL</strong> · Real Estate Development · Málaga
+            <strong>Sadala SL</strong> · Builders of the Unique · Málaga
           </div>
           <div class="muted">
             Confidential — for the addressed bank only · ${fmtToday}
