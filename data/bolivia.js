@@ -14,12 +14,19 @@ window.OPPORTUNITIES["bolivia"] = {
   dealType: "buy-to-rent",
 
   // ====== PROPERTY ======
+  // Old fisherman's house split into 6 studios (~30 m² each) for
+  // short-term Airbnb operation. Total ~183 m² (180 m² studios + 3 m²
+  // circulation/stairs).
   property: {
-    typology: "Casa de pescadores (renovación + split)",
+    typology: "Casa de pescadores → 6 studios (short-term rental)",
     totalSqm: 183,
     units: [
-      { name: "Studio (ground floor)",        sqm: 60,  monthlyRent: 1500 },
-      { name: "Duplex (top floor, 2 terraces)", sqm: 123, monthlyRent: 3000 },
+      { name: "Studio 1", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
+      { name: "Studio 2", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
+      { name: "Studio 3", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
+      { name: "Studio 4", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
+      { name: "Studio 5", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
+      { name: "Studio 6", sqm: 30, nightlyRate: 150, occupancyRate: 0.70 },
     ],
   },
 
@@ -57,20 +64,22 @@ window.OPPORTUNITIES["bolivia"] = {
   },
 
   // ====== RENTAL OPERATIONS ======
+  // Short-term (Airbnb) operating model. Occupancy is baked into each unit's
+  // expected revenue (nightlyRate × occupancyRate × 365/12 → monthlyRent),
+  // so vacancySchedule is held at 0% (no double-counting). Bump it up if
+  // you want to model a slow ramp during Y1.
   rental: {
-    inflationRate: 0.02,                                 // applied to rents and OpEx
-    otherIncomeRate: 0.10,                               // tenant pays 10% of misc expenses (added to revenue)
-    // Vacancy: 20% Y1, 10% Y2, then 5% steady from Y3 onward.
-    vacancySchedule: [0.20, 0.10, 0.05, 0.05, 0.05, 0.05],
+    inflationRate: 0.02,
+    otherIncomeRate: 0,            // short-term: cleaning fees pass through, no extra income
+    vacancySchedule: [0, 0, 0, 0, 0, 0],
     operatingExpenses: {
-      // Updated Apr 2026: only 4 lines — maintenance, IBI/insurance, utilities,
-      // rental commissions. Marketing / management / salaries / agency removed.
-      maintenance:       0.06,
-      ibiInsurance:      0.10,
-      utilities:         0.05,    // Water, electricity, etc. — placeholder, confirm with landlord/tenant split
-      rentalCommissions: 0.18,    // Recurring rental commissions (% of PGI)
+      maintenance:        0.06,
+      ibiInsurance:       0.10,
+      utilities:          0.05,    // landlord pays utilities for short-term guests
+      propertyManagement: 0.20,    // local manager (cleaning, check-in, ops)
+      airbnbFee:          0.18,    // platform commission (host + guest split combined)
     },
-    capexRate: 0.01,           // CapEx reserve, % of PGI (separate from OpEx)
+    capexRate: 0.01,
     holdYears: 5,
     capitalGrowthRate: 0.01,
     saleCommissionRate: 0.05,

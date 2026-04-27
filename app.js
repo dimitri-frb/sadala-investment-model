@@ -121,7 +121,16 @@ function computeRental(opp, scenarioKey) {
   const amort = amortizationByYear(loanAmount, F.interestRate, F.termYears, RT.holdYears);
 
   // --- Yearly cash flows ---
-  const baseAnnualRent = opp.property.units.reduce((sum, u) => sum + u.monthlyRent * 12, 0);
+  // Each unit can specify either an explicit monthlyRent (long-term lease)
+  // or a nightlyRate + occupancyRate (short-term / Airbnb). Compute the
+  // annual rent accordingly.
+  const baseAnnualRent = opp.property.units.reduce((sum, u) => {
+    if (u.monthlyRent != null) return sum + u.monthlyRent * 12;
+    if (u.nightlyRate != null && u.occupancyRate != null) {
+      return sum + u.nightlyRate * 365 * u.occupancyRate;
+    }
+    return sum;
+  }, 0);
   const adjustedBaseRent = baseAnnualRent * (s.rentMultiplier || 1);
 
   const cashFlows = [];
@@ -1000,14 +1009,16 @@ function renderInvestors(opp) {
 // Human-readable labels for OpEx categories. Add to this map when new
 // keys are introduced in opportunity data files.
 const OPEX_LABELS = {
-  marketing:         "Marketing",
-  salaries:          "Salaries",
-  maintenance:       "Maintenance & repairs",
-  management:        "Management",
-  ibiInsurance:      "IBI & insurance",
-  utilities:         "Water, electricity, etc.",
-  agency:            "Agency commission",
-  rentalCommissions: "Rental commissions",
+  marketing:          "Marketing",
+  salaries:           "Salaries",
+  maintenance:        "Maintenance & repairs",
+  management:         "Management",
+  propertyManagement: "Property management",
+  ibiInsurance:       "IBI & insurance",
+  utilities:          "Water, electricity, etc.",
+  agency:             "Agency commission",
+  rentalCommissions:  "Rental commissions",
+  airbnbFee:          "Airbnb platform fee",
 };
 function opexLabel(key) {
   return OPEX_LABELS[key] || (key.charAt(0).toUpperCase() + key.slice(1));
@@ -1077,7 +1088,16 @@ function renderRentalHypothesis(opp) {
   const RT = opp.rental;
   const P = opp.property;
 
-  const totalRent = P.units.reduce((s, u) => s + u.monthlyRent, 0);
+  // Effective monthly rent per unit (handles both monthlyRent and
+  // nightlyRate × occupancyRate forms).
+  const unitMonthlyRent = (u) => {
+    if (u.monthlyRent != null) return u.monthlyRent;
+    if (u.nightlyRate != null && u.occupancyRate != null) {
+      return u.nightlyRate * (365 / 12) * u.occupancyRate;
+    }
+    return 0;
+  };
+  const totalRent = P.units.reduce((s, u) => s + unitMonthlyRent(u), 0);
   const renovationBase = R.costPerSqm * P.totalSqm;
   const renovationConstruction = renovationBase * (1 + (R.contingenciesRate || 0));
   const loanForDisplay = F.ltcRate != null
@@ -1096,7 +1116,12 @@ function renderRentalHypothesis(opp) {
           <tbody>
             ${hypRow("Typology", P.typology)}
             ${hypRow("Total surface", `${fmtNum(P.totalSqm, 0)} m²`)}
-            ${P.units.map(u => hypRow(`${u.name}`, `${fmtNum(u.sqm, 0)} m² · ${fmtEUR(u.monthlyRent)}/mo`, { sub: true })).join("")}
+            ${P.units.map(u => {
+              const desc = u.nightlyRate != null
+                ? `${fmtNum(u.sqm, 0)} m² · ${fmtEUR(u.nightlyRate)}/night × ${fmtPct(u.occupancyRate, 0)} occ. = ${fmtEUR(unitMonthlyRent(u))}/mo`
+                : `${fmtNum(u.sqm, 0)} m² · ${fmtEUR(u.monthlyRent)}/mo`;
+              return hypRow(u.name, desc, { sub: true });
+            }).join("")}
             ${hypRow("Total monthly rent", fmtEUR(totalRent), { derived: true })}
             ${hypRow("Total annual rent", fmtEUR(totalRent * 12), { derived: true })}
           </tbody>
